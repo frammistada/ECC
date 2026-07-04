@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  /* Citadel palette — the only colors in the app. No gradients, no pure black/white. */
+  --color-stone: #eae7e1; /* page background */
+  --color-marble: #f6f4f0; /* entry surfaces */
+  --color-ink: #1f2320; /* primary text */
+  --color-ash: #6b6862; /* secondary text, timestamps, rules */
+  --color-patina: #5c6b4f; /* the one accent — links, active states, marginalia rule */
+  --color-ember: #8b3a3a; /* reserved for the paywall moment only */
+
+  --font-display: var(--font-fraunces), serif;
+  --font-body: var(--font-source-serif), serif;
+  --font-mono: var(--font-plex-mono), monospace;
+
+  --animate-settle: settle 180ms ease-out both;
+
+  @keyframes settle {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+::selection {
+  background-color: var(--color-patina);
+  color: var(--color-marble);
+}
