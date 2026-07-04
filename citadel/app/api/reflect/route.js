@@ -1,10 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MENTOR_SYSTEM_PROMPT } from "@/lib/mentor-prompt";
+import { createClient } from "@/lib/supabase/server";
+import { getMentorResponse } from "@/lib/mentor";
+import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
 
 const MAX_ENTRY_CHARS = 5000;
-const MAX_HISTORY = 5;
 
 export async function POST(request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "You are signed out." }, { status: 401 });
+  }
+
   let body;
   try {
     body = await request.json();
@@ -23,62 +32,46 @@ export async function POST(request) {
     );
   }
 
-  // Prior exchanges from this sitting (persistence arrives on day two).
-  // The mentor reads the recent past so it can hold the writer to it.
-  const history = Array.isArray(body?.history)
-    ? body.history
-        .filter(
-          (x) =>
-            typeof x?.entry === "string" && typeof x?.response === "string",
-        )
-        .slice(-MAX_HISTORY)
-    : [];
+  const [{ data: profile }, { count: entryCount }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("subscription_status")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("entries")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+  ]);
 
-  if (process.env.CITADEL_MOCK_MENTOR === "1") {
-    return Response.json({
-      response:
-        "[mock mentor — set ANTHROPIC_API_KEY for the real one] You wrote it down, which is more than most manage. What part of this were you hoping I wouldn't notice?",
-    });
+  if ((entryCount ?? 0) >= FREE_ENTRY_LIMIT && !isSubscribed(profile)) {
+    return Response.json(
+      {
+        paywall: true,
+        error:
+          "Continuing past your first five reflections requires a subscription.",
+      },
+      { status: 402 },
+    );
   }
 
-  const messages = history.flatMap((x) => [
-    { role: "user", content: x.entry },
-    { role: "assistant", content: x.response },
-  ]);
-  messages.push({ role: "user", content: entry });
+  // The mentor reads the last five exchanges so it can hold the writer
+  // to their own patterns. This is the product's memory.
+  const { data: recent } = await supabase
+    .from("entries")
+    .select("content, responses(content)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(5);
 
-  const client = new Anthropic();
+  const history = (recent ?? [])
+    .filter((e) => e.responses?.[0]?.content)
+    .map((e) => ({ entry: e.content, response: e.responses[0].content }))
+    .reverse();
 
+  let mentorText;
   try {
-    const result = await client.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 2048,
-      thinking: { type: "adaptive" },
-      system: MENTOR_SYSTEM_PROMPT,
-      messages,
-    });
-
-    if (result.stop_reason === "refusal") {
-      return Response.json(
-        { error: "The mentor has nothing to say to that." },
-        { status: 200 },
-      );
-    }
-
-    const text = result.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("")
-      .trim();
-
-    if (!text) {
-      return Response.json(
-        { error: "The mentor was silent. Try again." },
-        { status: 502 },
-      );
-    }
-
-    return Response.json({ response: text });
+    mentorText = await getMentorResponse(entry, history);
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
       console.error("[reflect] missing or invalid ANTHROPIC_API_KEY");
@@ -93,17 +86,46 @@ export async function POST(request) {
         { status: 429 },
       );
     }
-    if (err instanceof Anthropic.APIConnectionError) {
-      console.error("[reflect] connection error", err);
-      return Response.json(
-        { error: "The mentor could not be reached." },
-        { status: 502 },
-      );
-    }
     console.error("[reflect] api error", err);
     return Response.json(
       { error: "Something failed. Your words were not lost — try again." },
       { status: 502 },
     );
   }
+
+  if (!mentorText) {
+    return Response.json(
+      { error: "The mentor was silent. Try again." },
+      { status: 502 },
+    );
+  }
+
+  // Save entry and response together — an entry without its response
+  // would be a hole in the timeline.
+  const { data: saved, error: entryError } = await supabase
+    .from("entries")
+    .insert({ user_id: user.id, content: entry })
+    .select("id")
+    .single();
+
+  if (entryError) {
+    console.error("[reflect] entry insert failed", entryError);
+    return Response.json(
+      { error: "Something failed. Your words were not lost — try again." },
+      { status: 500 },
+    );
+  }
+
+  const { error: responseError } = await supabase
+    .from("responses")
+    .insert({ entry_id: saved.id, content: mentorText });
+
+  if (responseError) {
+    console.error("[reflect] response insert failed", responseError);
+  }
+
+  return Response.json({
+    response: mentorText,
+    entryCount: (entryCount ?? 0) + 1,
+  });
 }

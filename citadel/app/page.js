@@ -1,132 +1,118 @@
-"use client";
+import Link from "next/link";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { isSubscribed } from "@/lib/limits";
+import { dateLine } from "@/lib/format";
+import Journal from "@/components/journal";
 
-import { useState } from "react";
+export const dynamic = "force-dynamic";
 
-function todayLine() {
-  return new Date()
-    .toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    })
-    .toLowerCase();
-}
-
-function timeLine(date) {
-  return date
-    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-    .toLowerCase();
-}
-
-export default function Home() {
-  const [draft, setDraft] = useState("");
-  const [exchanges, setExchanges] = useState([]);
-  const [waiting, setWaiting] = useState(false);
-  const [error, setError] = useState(null);
-
-  async function reflect(event) {
-    event.preventDefault();
-    const entry = draft.trim();
-    if (!entry || waiting) return;
-
-    setWaiting(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/reflect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entry,
-          history: exchanges.map(({ entry, response }) => ({
-            entry,
-            response,
-          })),
-        }),
-      });
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        setError(data.error || "Something failed. Try again.");
-        return;
-      }
-
-      setExchanges((prev) => [
-        ...prev,
-        { entry, response: data.response, at: new Date() },
-      ]);
-      setDraft("");
-    } catch {
-      setError("The mentor could not be reached.");
-    } finally {
-      setWaiting(false);
-    }
-  }
-
+function Header({ nav }) {
   return (
-    <main className="mx-auto min-h-screen max-w-[640px] px-6 py-16 sm:py-24">
-      <header>
+    <header className="flex items-baseline justify-between">
+      <div>
         <h1 className="font-display text-4xl font-normal tracking-[0.08em]">
           Citadel
         </h1>
-        <p className="mt-3 font-mono text-xs text-ash">{todayLine()}</p>
-      </header>
+        <p className="mt-3 font-mono text-xs text-ash">
+          {dateLine(new Date())}
+        </p>
+      </div>
+      {nav}
+    </header>
+  );
+}
 
+function Landing({ configured }) {
+  return (
+    <main className="mx-auto min-h-screen max-w-[640px] px-6 py-16 sm:py-24">
+      <Header />
       <section className="mt-16">
-        {exchanges.length === 0 && !waiting ? (
-          <p className="text-ash">Nothing written yet today.</p>
+        <p className="text-lg leading-relaxed">
+          A private place to write, each evening, about what tested you. A
+          mentor reads it and answers with a question, not a compliment. It
+          remembers what you wrote before, and holds you to it.
+        </p>
+        {configured ? (
+          <Link
+            href="/signin"
+            className="mt-10 inline-block font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4"
+          >
+            Enter
+          </Link>
         ) : (
-          <ol>
-            {exchanges.map((x, i) => (
-              <li
-                key={i}
-                className={
-                  i === 0 ? undefined : "mt-12 border-t border-ash/30 pt-12"
-                }
-              >
-                <p className="font-mono text-xs text-ash">{timeLine(x.at)}</p>
-                <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed">
-                  {x.entry}
-                </p>
-                <blockquote className="mt-8 animate-settle border-l border-patina pl-5 text-lg italic leading-relaxed text-ink/90">
-                  {x.response}
-                </blockquote>
-              </li>
-            ))}
-          </ol>
-        )}
-
-        {waiting && (
           <p className="mt-10 font-mono text-xs text-ash">
-            the mentor is reading
+            supabase is not configured — see the readme
           </p>
         )}
       </section>
+    </main>
+  );
+}
 
-      <form onSubmit={reflect} className="mt-16 border-t border-ash/30 pt-12">
-        <label htmlFor="entry" className="font-mono text-xs text-ash">
-          what tested you today
-        </label>
-        <textarea
-          id="entry"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={6}
-          maxLength={5000}
-          disabled={waiting}
-          className="mt-4 w-full resize-y bg-marble p-5 text-lg leading-relaxed text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-          placeholder="Where did you slip, or hold firm."
-        />
-        {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-        <button
-          type="submit"
-          disabled={waiting || !draft.trim()}
-          className="mt-6 font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
-        >
-          Reflect
+export default async function Home({ searchParams }) {
+  if (!isSupabaseConfigured()) return <Landing configured={false} />;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return <Landing configured />;
+
+  const params = await searchParams;
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const [{ data: profile }, { count: entryCount }, { data: todays }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("entries")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase
+        .from("entries")
+        .select("content, created_at, responses(content)")
+        .eq("user_id", user.id)
+        .gte("created_at", startOfDay.toISOString())
+        .order("created_at", { ascending: true }),
+    ]);
+
+  const exchanges = (todays ?? []).map((e) => ({
+    entry: e.content,
+    response: e.responses?.[0]?.content ?? "",
+    at: e.created_at,
+  }));
+
+  const nav = (
+    <nav className="flex items-baseline gap-5 font-mono text-xs">
+      <Link
+        href="/history"
+        className="text-patina underline decoration-1 underline-offset-4"
+      >
+        history
+      </Link>
+      <form action="/api/signout" method="post">
+        <button type="submit" className="text-ash">
+          sign out
         </button>
       </form>
+    </nav>
+  );
+
+  return (
+    <main className="mx-auto min-h-screen max-w-[640px] px-6 py-16 sm:py-24">
+      <Header nav={nav} />
+      <Journal
+        initialExchanges={exchanges}
+        initialCount={entryCount ?? 0}
+        subscribed={isSubscribed(profile)}
+        checkoutSuccess={params?.checkout === "success"}
+      />
     </main>
   );
 }
