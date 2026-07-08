@@ -4,5 +4,7 @@ out/
 .env
 .env.local
 .env*.local
+# Public-only Supabase config — deliberately committed (repo root ignores it)
+!.env.production
 npm-debug.log*
 .DS_Store
