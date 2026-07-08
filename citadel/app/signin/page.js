@@ -18,7 +18,7 @@ export default async function SigninPage({ searchParams }) {
       <section className="mt-16">
         {params?.error === "link" && (
           <p className="mb-8 text-ash">
-            That link didn&apos;t work. Ask for another.
+            That sign-in didn&apos;t complete. Try again.
           </p>
         )}
         <SigninForm />
