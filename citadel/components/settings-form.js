@@ -83,14 +83,14 @@ export default function SettingsForm({
               className={
                 "border-l px-5 py-4 text-left transition-colors " +
                 (selected
-                  ? "border-patina bg-marble"
-                  : "border-ash/30 hover:bg-marble/60")
+                  ? "border-patina bg-marble text-ink"
+                  : "border-ash/30 text-parchment hover:bg-parchment/10")
               }
             >
-              <span className="text-lg leading-relaxed text-ink">
+              <span className="text-lg leading-relaxed">
                 {m.label}
               </span>
-              <span className="mt-1 block text-sm leading-relaxed text-ash">
+              <span className="mt-1 block text-sm leading-relaxed opacity-70">
                 {m.blurb}
               </span>
             </button>
@@ -100,7 +100,7 @@ export default function SettingsForm({
 
       <label
         htmlFor="name"
-        className="mt-12 block border-t border-ash/30 pt-12 font-mono text-xs text-ash"
+        className="mt-12 block border-t border-parchment/15 pt-12 font-mono text-xs text-ash"
       >
         what the mentor calls you
       </label>
@@ -114,11 +114,11 @@ export default function SettingsForm({
         }}
         maxLength={60}
         disabled={busy}
-        className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+        className="mt-4 w-full rounded-xl bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
         placeholder="a name, or leave it blank"
       />
 
-      <div className="mt-12 border-t border-ash/30 pt-12">
+      <div className="mt-12 border-t border-parchment/15 pt-12">
         <p className="font-mono text-xs text-ash">accountability contact</p>
         <p className="mt-4 text-sm leading-relaxed text-ash">
           One person. On a day you mark that you fell short, you&apos;ll be
@@ -136,7 +136,7 @@ export default function SettingsForm({
           maxLength={80}
           disabled={busy}
           aria-label="their name"
-          className="mt-5 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          className="mt-5 w-full rounded-xl bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
           placeholder="their name"
         />
         <input
@@ -150,7 +150,7 @@ export default function SettingsForm({
           maxLength={255}
           disabled={busy}
           aria-label="their email"
-          className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          className="mt-4 w-full rounded-xl bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
           placeholder="their email"
         />
         {!emailConfigured && (contactEmail || contactName) && (
@@ -167,7 +167,7 @@ export default function SettingsForm({
         <button
           type="submit"
           disabled={busy}
-          className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:opacity-50"
+          className="rounded-xl bg-cream px-8 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
         >
           Save
         </button>

@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  /* Citadel palette — the only colors in the app. No gradients, no pure black/white. */
-  --color-stone: #eae7e1; /* page background */
-  --color-marble: #f6f4f0; /* entry surfaces */
-  --color-ink: #1f2320; /* primary text */
-  --color-ash: #6b6862; /* secondary text, timestamps, rules */
-  --color-patina: #5c6b4f; /* the one accent — links, active states, marginalia rule */
+  /* Citadel palette — dark shell per citadel_ui_spec.md (supersedes the
+     original light Stone/Marble page background). Light surfaces keep the
+     Marble/Ink pairing; no gradients, no pure black/white. */
+  --color-night: #181a16; /* page background — warm near-black */
+  --color-panel: #1d201a; /* slightly lifted card fill on the dark shell */
+  --color-parchment: #e9e5da; /* primary text on dark */
+  --color-ash: #9b9789; /* secondary text, timestamps, rules (on dark) */
+  --color-marble: #f6f4f0; /* entry/input surfaces (light) */
+  --color-cream: #efeadf; /* primary button surface (Enter, Reflect, Log In) */
+  --color-ink: #1f2320; /* text on light surfaces */
+  --color-patina: #5c6b4f; /* accent on light surfaces — marginalia rule, links */
   --color-ember: #8b3a3a; /* reserved for the paywall moment only */
 
   --font-display: var(--font-fraunces), serif;
@@ -28,4 +33,14 @@
 ::selection {
   background-color: var(--color-patina);
   color: var(--color-marble);
+}
+
+/* Thin wavy border framing the whole screen — the consistent shell across
+   all screens (citadel_ui_spec.md). A scalloped ring tile stretched via
+   border-image; sits above content but never intercepts input. */
+.wavy-frame {
+  border: 9px solid transparent;
+  border-image-source: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3,8 A5 5 0 0 1 8,3 Q12,0.6 16,3 A5 5 0 0 1 21,8 Q23.4,12 21,16 A5 5 0 0 1 16,21 Q12,23.4 8,21 A5 5 0 0 1 3,16 Q0.6,12 3,8 Z' fill='none' stroke='%239b9789' stroke-opacity='0.55' stroke-width='1.4'/%3E%3C/svg%3E");
+  border-image-slice: 8;
+  border-image-repeat: round;
 }

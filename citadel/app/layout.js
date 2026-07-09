@@ -29,7 +29,11 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${fraunces.variable} ${sourceSerif.variable} ${plexMono.variable}`}
     >
-      <body className="bg-stone font-body text-ink antialiased">
+      <body className="bg-night font-body text-parchment antialiased">
+        <div
+          aria-hidden="true"
+          className="wavy-frame pointer-events-none fixed inset-0 z-50"
+        />
         {children}
       </body>
     </html>

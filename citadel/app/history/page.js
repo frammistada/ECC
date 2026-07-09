@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { dateLine, timeLine } from "@/lib/format";
+import { LocalStamp } from "@/components/local-date";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function HistoryPage() {
         <nav className="font-mono text-xs">
           <Link
             href="/"
-            className="text-patina underline decoration-1 underline-offset-4"
+            className="underline decoration-1 underline-offset-4"
           >
             today
           </Link>
@@ -47,7 +47,6 @@ export default async function HistoryPage() {
         ) : (
           <ol>
             {exchanges.map((x, i) => {
-              const at = new Date(x.created_at);
               return (
                 <li
                   key={i}
@@ -56,13 +55,13 @@ export default async function HistoryPage() {
                   }
                 >
                   <p className="font-mono text-xs text-ash">
-                    {dateLine(at)} — {timeLine(at)}
+                    <LocalStamp iso={x.created_at} withDate />
                   </p>
                   <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed">
                     {x.content}
                   </p>
                   {x.responses?.[0]?.content && (
-                    <blockquote className="mt-8 border-l border-patina pl-5 text-lg italic leading-relaxed text-ink/90">
+                    <blockquote className="mt-8 border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
                       {x.responses[0].content}
                     </blockquote>
                   )}

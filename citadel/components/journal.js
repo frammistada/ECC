@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FREE_ENTRY_LIMIT } from "@/lib/limits";
-import { timeLine } from "@/lib/format";
+import { LocalStamp } from "@/components/local-date";
 
 export default function Journal({
   initialExchanges,
@@ -111,7 +111,7 @@ export default function Journal({
 
   return (
     <>
-      <section className="mt-16">
+      <section className="mt-10">
         {checkoutSuccess && !subscribed && (
           <p className="mb-10 font-mono text-xs text-ash">
             subscription received — it may take a moment to register
@@ -119,7 +119,7 @@ export default function Journal({
         )}
 
         {exchanges.length === 0 && !waiting ? (
-          <p className="text-ash">Nothing written yet today.</p>
+          <p className="text-center text-xl leading-relaxed">Nothing written yet today.</p>
         ) : (
           <ol>
             {exchanges.map((x, i) => (
@@ -130,13 +130,13 @@ export default function Journal({
                 }
               >
                 <p className="font-mono text-xs text-ash">
-                  {timeLine(new Date(x.at))}
+                  <LocalStamp iso={x.at} />
                 </p>
                 <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed">
                   {x.entry}
                 </p>
                 {x.response && (
-                  <blockquote className="mt-8 animate-settle border-l border-patina pl-5 text-lg italic leading-relaxed text-ink/90">
+                  <blockquote className="mt-8 animate-settle border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
                     {x.response}
                   </blockquote>
                 )}
@@ -153,15 +153,15 @@ export default function Journal({
       </section>
 
       {note && (
-        <section className="mt-12 animate-settle bg-marble p-6">
-          <p className="font-mono text-xs text-ash">
+        <section className="mt-12 animate-settle rounded-2xl bg-marble p-6 text-ink">
+          <p className="font-mono text-xs text-ink/60">
             a note to {note.toName || "your contact"}
           </p>
           <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed text-ink/90">
             {note.message}
           </p>
           {noteState === "sent" ? (
-            <p className="mt-6 font-mono text-xs text-ash">sent</p>
+            <p className="mt-6 font-mono text-xs text-ink/60">sent</p>
           ) : (
             <div className="mt-6 flex items-baseline gap-6">
               <button
@@ -175,12 +175,12 @@ export default function Journal({
               <button
                 type="button"
                 onClick={() => setNote(null)}
-                className="font-mono text-xs text-ash underline decoration-1 underline-offset-4"
+                className="font-mono text-xs text-ink/60 underline decoration-1 underline-offset-4"
               >
                 not now
               </button>
               {noteState === "error" && (
-                <span className="font-mono text-xs text-ash">
+                <span className="font-mono text-xs text-ink/60">
                   couldn&apos;t send — try again
                 </span>
               )}
@@ -206,8 +206,11 @@ export default function Journal({
           {error && <p className="mt-4 text-sm text-ash">{error}</p>}
         </section>
       ) : (
-        <form onSubmit={reflect} className="mt-16 border-t border-ash/30 pt-12">
-          <label htmlFor="entry" className="font-mono text-xs text-ash">
+        <form onSubmit={reflect} className="mt-10 border-t border-parchment/15 pt-8">
+          <label
+            htmlFor="entry"
+            className="block text-center font-mono text-sm tracking-[0.08em] text-ash"
+          >
             what tested you today
           </label>
           <textarea
@@ -217,7 +220,7 @@ export default function Journal({
             rows={6}
             maxLength={5000}
             disabled={waiting}
-            className="mt-4 w-full resize-y bg-marble p-5 text-lg leading-relaxed text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+            className="mt-5 w-full resize-y rounded-xl bg-marble p-5 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
             placeholder="Where did you slip, or hold firm."
           />
 
@@ -235,16 +238,16 @@ export default function Journal({
           )}
 
           {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-          <div className="mt-6 flex items-baseline justify-between">
+          <div className="mt-6 flex items-center justify-between gap-4">
             <button
               type="submit"
               disabled={waiting || !draft.trim()}
-              className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
+              className="rounded-xl bg-cream px-6 py-3.5 text-lg tracking-wide text-ink disabled:text-ink/50"
             >
               Reflect
             </button>
             {!subscribed && (
-              <p className="font-mono text-xs text-ash">
+              <p className="whitespace-nowrap text-right font-mono text-[10px] text-ash sm:text-xs">
                 {entryCount} of {FREE_ENTRY_LIMIT} free reflections used
               </p>
             )}
