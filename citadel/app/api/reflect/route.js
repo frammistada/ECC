@@ -1,6 +1,9 @@
+import { after } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getMentorResponse } from "@/lib/mentor";
+import { updatePatternSummary } from "@/lib/summary";
 import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
 
 const MAX_ENTRY_CHARS = 5000;
@@ -32,12 +35,11 @@ export async function POST(request) {
     );
   }
 
+  // select("*") rather than naming new columns, so this still works if the
+  // 002 migration hasn't been applied yet — the fields just come back
+  // undefined and the mentor falls back to its default voice.
   const [{ data: profile }, { count: entryCount }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("subscription_status")
-      .eq("id", user.id)
-      .single(),
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
       .from("entries")
       .select("*", { count: "exact", head: true })
@@ -55,8 +57,13 @@ export async function POST(request) {
     );
   }
 
+  const mentorMode = profile?.mentor_mode === "direct" ? "direct" : "steady";
+  const patternSummary = profile?.pattern_summary ?? null;
+  const preferredName = profile?.preferred_name ?? null;
+
   // The mentor reads the last five exchanges so it can hold the writer
-  // to their own patterns. This is the product's memory.
+  // to their own patterns. This is the product's short-term memory; the
+  // rolling pattern_summary above is the long-term memory.
   const { data: recent } = await supabase
     .from("entries")
     .select("content, responses(content)")
@@ -71,7 +78,13 @@ export async function POST(request) {
 
   let mentorText;
   try {
-    mentorText = await getMentorResponse(entry, history);
+    mentorText = await getMentorResponse(
+      entry,
+      history,
+      mentorMode,
+      patternSummary,
+      preferredName,
+    );
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
       console.error("[reflect] missing or invalid ANTHROPIC_API_KEY");
@@ -123,6 +136,40 @@ export async function POST(request) {
   if (responseError) {
     console.error("[reflect] response insert failed", responseError);
   }
+
+  // Everything below runs after the response is sent to the user, so it
+  // adds no latency. All best-effort: failures (incl. a not-yet-applied
+  // migration) are logged and swallowed, never surfaced to the writer.
+  after(async () => {
+    try {
+      const admin = createAdminClient();
+
+      // Item 1: fold this exchange into the rolling pattern summary.
+      const nextSummary = await updatePatternSummary(
+        patternSummary,
+        entry,
+        mentorText,
+      );
+      if (nextSummary && nextSummary !== patternSummary) {
+        await admin
+          .from("profiles")
+          .update({ pattern_summary: nextSummary })
+          .eq("id", user.id);
+      }
+
+      // Item 3: behavioral instrumentation. No goals exist yet, so
+      // goal_status is null for now — the row is groundwork for later.
+      await admin.from("user_activity_log").insert({
+        user_id: user.id,
+        entry_id: saved.id,
+        goal_status: null,
+        mentor_mode: mentorMode,
+        entry_length: entry.length,
+      });
+    } catch (err) {
+      console.error("[reflect] post-response work failed", err);
+    }
+  });
 
   return Response.json({
     response: mentorText,
