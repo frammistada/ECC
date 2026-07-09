@@ -59,9 +59,9 @@ project (id `ktztzjajwhlgqsbrcftk`).
 
 - **Built:** full auth, the reflect loop with two-layer memory, onboarding +
   mentor mode, settings, history timeline, paywall enforcement, Stripe wiring,
-  accountability draft/send, instrumentation logging.
-- **Pending / needs the user:** `BREVO_API_KEY` + `ACCOUNTABILITY_FROM_EMAIL` in
-  Vercel (accountability send is draft-only until set); a payment provider decision
+  accountability draft/send (live — `BREVO_API_KEY` + `ACCOUNTABILITY_FROM_EMAIL`
+  are set in Vercel), instrumentation logging.
+- **Pending / needs the user:** a payment provider decision
   (Stripe unavailable in Turkey — evaluating Paddle/Lemon Squeezy/iyzico, so the
   Stripe routes may be swapped); no adaptive-tone logic yet (item 3 is just data).
 
