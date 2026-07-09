@@ -34,20 +34,22 @@ alter table public.profiles enable row level security;
 alter table public.entries enable row level security;
 alter table public.responses enable row level security;
 
+-- auth.uid() wrapped in (select ...) so Postgres evaluates it once per
+-- query instead of once per row — Supabase's own recommendation at scale.
 create policy "read own profile" on public.profiles
-  for select using (auth.uid() = id);
+  for select using ((select auth.uid()) = id);
 
 create policy "read own entries" on public.entries
-  for select using (auth.uid() = user_id);
+  for select using ((select auth.uid()) = user_id);
 
 create policy "write own entries" on public.entries
-  for insert with check (auth.uid() = user_id);
+  for insert with check ((select auth.uid()) = user_id);
 
 create policy "read own responses" on public.responses
   for select using (
     exists (
       select 1 from public.entries e
-      where e.id = entry_id and e.user_id = auth.uid()
+      where e.id = entry_id and e.user_id = (select auth.uid())
     )
   );
 
@@ -55,7 +57,7 @@ create policy "write own responses" on public.responses
   for insert with check (
     exists (
       select 1 from public.entries e
-      where e.id = entry_id and e.user_id = auth.uid()
+      where e.id = entry_id and e.user_id = (select auth.uid())
     )
   );
 
@@ -72,6 +74,9 @@ begin
   return new;
 end;
 $$;
+
+-- This runs only as an auth.users insert trigger, never as a public RPC.
+revoke execute on function public.handle_new_user() from public;
 
 create trigger on_auth_user_created
   after insert on auth.users
