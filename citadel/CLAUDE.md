@@ -24,7 +24,8 @@ came before. This file loads every session; keep it concise and current.
   by a cheap Haiku call after each entry (revise, don't restart) and prepended to
   the mentor's system prompt. The summary update + activity log run in Next's
   `after()` so they add zero latency and never block/break the reply.
-- **Mentor mode.** 7-question scenario onboarding (`lib/onboarding.js`) scores
+- **Mentor mode.** 7-question scenario onboarding (`lib/onboarding.js`, asked
+  one question per screen) scores
   `direct` vs `steady` (steady = safe default). Stored on `profiles.mentor_mode`;
   shifts the tone addendum in `lib/mentor-prompt.js`. `preferred_name` (onboarding
   Q8) is offered to the mentor to use where it reads naturally. Both editable at

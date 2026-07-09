@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { isSubscribed } from "@/lib/limits";
-import { dateLine, shortDateLine } from "@/lib/format";
+import { LocalDate } from "@/components/local-date";
 import Journal from "@/components/journal";
 import RingMark from "@/components/ring-mark";
 
@@ -12,7 +12,7 @@ function Landing({ configured }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[560px] flex-col px-4 pb-7 pt-7">
       <p className="text-center font-mono text-[11px] uppercase tracking-[0.35em] text-ash">
-        {shortDateLine(new Date())}
+        <LocalDate variant="short" />
       </p>
       <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[28px] border border-parchment/10 bg-panel px-10">
         <p className="max-w-[250px] text-center text-lg leading-relaxed text-ash">
@@ -101,7 +101,7 @@ export default async function Home({ searchParams }) {
             Citadel
           </h1>
           <p className="mt-3 font-mono text-sm tracking-[0.08em] text-ash">
-            {dateLine(new Date())}
+            <LocalDate />
           </p>
         </header>
         <Journal

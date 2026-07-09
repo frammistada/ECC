@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FREE_ENTRY_LIMIT } from "@/lib/limits";
-import { timeLine } from "@/lib/format";
+import { LocalStamp } from "@/components/local-date";
 
 export default function Journal({
   initialExchanges,
@@ -130,7 +130,7 @@ export default function Journal({
                 }
               >
                 <p className="font-mono text-xs text-ash">
-                  {timeLine(new Date(x.at))}
+                  <LocalStamp iso={x.at} />
                 </p>
                 <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed">
                   {x.entry}
