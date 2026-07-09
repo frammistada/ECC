@@ -60,17 +60,28 @@ project (id `ktztzjajwhlgqsbrcftk`).
 - **Built:** full auth, the reflect loop with two-layer memory, onboarding +
   mentor mode, settings, history timeline, paywall enforcement, Stripe wiring,
   accountability draft/send (live — `BREVO_API_KEY` + `ACCOUNTABILITY_FROM_EMAIL`
-  are set in Vercel), instrumentation logging.
-- **Pending / needs the user:** a payment provider decision
+  are set in Vercel), instrumentation logging. Dark-shell v1 UI per
+  `citadel_ui_spec.md`: splash, sign-in, and main entry match the reference
+  designs; history/settings/onboarding are minimally restyled placeholders.
+- **Pending / needs the user:** reference designs for history, settings,
+  onboarding, and the paywall (paywall styling deliberately untouched until
+  designed); a payment provider decision
   (Stripe unavailable in Turkey — evaluating Paddle/Lemon Squeezy/iyzico, so the
   Stripe routes may be swapped); no adaptive-tone logic yet (item 3 is just data).
 
 ## Hard rules
 
-- **Palette only** (defined in `app/globals.css`): Stone `#EAE7E1` bg, Marble
-  `#F6F4F0` surfaces, Ink `#1F2320` text, Ash `#6B6862` secondary/rules, Patina
-  `#5C6B4F` the one accent. **Ember `#8B3A3A` is reserved for the paywall alone** —
-  never elsewhere. No gradients, no pure black/white, no purple/indigo/neon.
+- **Palette only** (defined in `app/globals.css`; dark shell confirmed by
+  `citadel_ui_spec.md`, superseding the original light Stone background): Night
+  `#181A16` bg, Panel `#1D201A` lifted cards, Parchment `#E9E5DA` text on dark,
+  Ash `#9B9789` secondary/rules, Marble `#F6F4F0` light input surfaces with Ink
+  `#1F2320` text, Cream `#EFEADF` primary buttons, Patina `#5C6B4F` accent on
+  light surfaces. **Ember `#8B3A3A` is reserved for the paywall alone** — never
+  elsewhere. No gradients, no pure black/white, no purple/indigo/neon.
+- **Shell**: thin wavy border framing every screen (`.wavy-frame`, global in
+  `app/layout.js`) + the interlocking-rings mark (`components/ring-mark.js`)
+  above the Citadel title. No other icons beyond the sign-in set in
+  `components/icons.js`; no sparkles or decorative extras.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin

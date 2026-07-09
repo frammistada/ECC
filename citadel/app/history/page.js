@@ -34,7 +34,7 @@ export default async function HistoryPage() {
         <nav className="font-mono text-xs">
           <Link
             href="/"
-            className="text-patina underline decoration-1 underline-offset-4"
+            className="underline decoration-1 underline-offset-4"
           >
             today
           </Link>
@@ -62,7 +62,7 @@ export default async function HistoryPage() {
                     {x.content}
                   </p>
                   {x.responses?.[0]?.content && (
-                    <blockquote className="mt-8 border-l border-patina pl-5 text-lg italic leading-relaxed text-ink/90">
+                    <blockquote className="mt-8 border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
                       {x.responses[0].content}
                     </blockquote>
                   )}

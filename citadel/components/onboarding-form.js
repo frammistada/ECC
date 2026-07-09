@@ -50,7 +50,7 @@ export default function OnboardingForm() {
         {ONBOARDING_QUESTIONS.map((q, i) => (
           <li
             key={q.id}
-            className={i === 0 ? undefined : "mt-12 border-t border-ash/30 pt-12"}
+            className={i === 0 ? undefined : "mt-12 border-t border-parchment/15 pt-12"}
           >
             <p className="font-mono text-xs text-ash">{`0${i + 1}`.slice(-2)}</p>
             <p className="mt-3 text-lg leading-relaxed">{q.prompt}</p>
@@ -66,7 +66,7 @@ export default function OnboardingForm() {
                       "border-l px-5 py-3 text-left text-lg leading-relaxed transition-colors " +
                       (selected
                         ? "border-patina bg-marble text-ink"
-                        : "border-ash/30 text-ink/80 hover:bg-marble/60")
+                        : "border-ash/30 text-parchment/80 hover:bg-parchment/10")
                     }
                   >
                     {o.label}
@@ -77,7 +77,7 @@ export default function OnboardingForm() {
           </li>
         ))}
 
-        <li className="mt-12 border-t border-ash/30 pt-12">
+        <li className="mt-12 border-t border-parchment/15 pt-12">
           <p className="font-mono text-xs text-ash">08</p>
           <label htmlFor="name" className="mt-3 block text-lg leading-relaxed">
             What should I call you?
@@ -89,7 +89,7 @@ export default function OnboardingForm() {
             onChange={(e) => setName(e.target.value)}
             maxLength={60}
             disabled={busy}
-            className="mt-5 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+            className="mt-5 w-full rounded-xl bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
             placeholder="a name, or leave it blank"
           />
         </li>
@@ -100,7 +100,7 @@ export default function OnboardingForm() {
       <button
         type="submit"
         disabled={!ready || busy}
-        className="mt-10 font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
+        className="mt-10 rounded-xl bg-cream px-8 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
       >
         Begin
       </button>

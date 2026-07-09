@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  GoogleMark,
+  PersonMark,
+  LockMark,
+  EyeMark,
+  CheckMark,
+} from "@/components/icons";
 
 // Flip after the Apple Developer account + Supabase provider config exist.
 const APPLE_ENABLED = false;
@@ -9,6 +16,8 @@ const APPLE_ENABLED = false;
 // Email flow: address → emailed code → choose a password → in.
 // The code is verified in this same tab, so the session lands in the
 // right browser — unlike a magic link opened from a mail app.
+// "Sign Up" and "Forgot password?" both enter this same code flow — the
+// emailed-code path doubles as first-time signup AND password reset.
 // Code length isn't hardcoded here: it's a Supabase project setting
 // (Authentication → Providers → Email → OTP length), so the input
 // accepts whatever length actually gets sent.
@@ -16,6 +25,7 @@ export default function SigninForm() {
   const [mode, setMode] = useState("start"); // start | code | password-new
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,7 +73,7 @@ export default function SigninForm() {
       });
       if (pwError) {
         setError(
-          "That email and password don't match. New here, or forgot it? Use a code below.",
+          "That email and password don't match. New here, or forgot it? Use Sign Up or Forgot password below.",
         );
         return;
       }
@@ -150,11 +160,14 @@ export default function SigninForm() {
 
   if (mode === "code") {
     return (
-      <form onSubmit={verifyCode}>
-        <p className="text-lg leading-relaxed">
+      <form onSubmit={verifyCode} className="mt-12">
+        <p className="text-center text-lg leading-relaxed">
           A code is on its way to {email.trim()}.
         </p>
-        <label htmlFor="code" className="mt-8 block font-mono text-xs text-ash">
+        <label
+          htmlFor="code"
+          className="mt-10 block text-center font-mono text-xs tracking-[0.2em] text-ash"
+        >
           the code
         </label>
         <input
@@ -165,14 +178,14 @@ export default function SigninForm() {
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           disabled={busy}
-          className="mt-4 w-full bg-marble p-5 font-mono text-lg tracking-[0.3em] text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          className="mt-4 w-full rounded-2xl bg-marble p-5 text-center font-mono text-lg tracking-[0.3em] text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
         />
-        {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-        <div className="mt-6 flex items-baseline gap-6">
+        {error && <p className="mt-4 text-center text-sm text-ash">{error}</p>}
+        <div className="mt-10 flex flex-col items-center gap-6">
           <button
             type="submit"
             disabled={busy || code.trim().length < 4}
-            className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
+            className="rounded-2xl bg-cream px-12 py-4 text-lg text-ink disabled:text-ink/50"
           >
             Continue
           </button>
@@ -190,13 +203,13 @@ export default function SigninForm() {
 
   if (mode === "password-new") {
     return (
-      <form onSubmit={setAccountPassword}>
-        <p className="text-lg leading-relaxed">
+      <form onSubmit={setAccountPassword} className="mt-12">
+        <p className="text-center text-lg leading-relaxed">
           Choose a password for next time.
         </p>
         <label
           htmlFor="new-password"
-          className="mt-8 block font-mono text-xs text-ash"
+          className="mt-10 block text-center font-mono text-xs tracking-[0.15em] text-ash"
         >
           a password — eight characters or more
         </label>
@@ -207,95 +220,130 @@ export default function SigninForm() {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           disabled={busy}
-          className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          className="mt-4 w-full rounded-2xl bg-marble p-5 text-lg text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
         />
-        {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy || newPassword.length < 8}
-          className="mt-6 font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
-        >
-          Set password
-        </button>
+        {error && <p className="mt-4 text-center text-sm text-ash">{error}</p>}
+        <div className="mt-10 flex justify-center">
+          <button
+            type="submit"
+            disabled={busy || newPassword.length < 8}
+            className="rounded-2xl bg-cream px-12 py-4 text-lg text-ink disabled:text-ink/50"
+          >
+            Set password
+          </button>
+        </div>
       </form>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-col items-start gap-5">
+    <div className="flex flex-1 flex-col">
+      <button
+        type="button"
+        onClick={() => withProvider("google")}
+        disabled={busy}
+        className="mt-12 flex w-full items-center justify-center gap-4 rounded-2xl bg-cream px-6 py-4 text-lg tracking-wide text-ink disabled:opacity-50"
+      >
+        <GoogleMark className="h-6 w-6" />
+        Continue with Google
+      </button>
+      {APPLE_ENABLED && (
         <button
           type="button"
-          onClick={() => withProvider("google")}
+          onClick={() => withProvider("apple")}
           disabled={busy}
-          className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-4 rounded-2xl bg-cream px-6 py-4 text-lg tracking-wide text-ink disabled:opacity-50"
         >
-          Continue with Google
+          Continue with Apple
         </button>
-        {APPLE_ENABLED && (
-          <button
-            type="button"
-            onClick={() => withProvider("apple")}
-            disabled={busy}
-            className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:opacity-50"
-          >
-            Continue with Apple
-          </button>
-        )}
+      )}
+
+      <div className="mt-12 flex items-center gap-5">
+        <span className="h-px flex-1 bg-parchment/15" />
+        <span className="font-mono text-sm tracking-[0.25em] text-ash">
+          or sign in
+        </span>
+        <span className="h-px flex-1 bg-parchment/15" />
       </div>
 
-      <p className="mt-10 border-t border-ash/30 pt-8 font-mono text-xs text-ash">
-        or by email
-      </p>
-
-      <form onSubmit={signInWithPassword} className="mt-4">
-        <label htmlFor="email" className="font-mono text-xs text-ash">
-          your email
+      <form onSubmit={signInWithPassword} className="mt-10 flex flex-1 flex-col">
+        <label
+          htmlFor="email"
+          className="flex items-center gap-4 rounded-2xl border border-parchment/15 px-5 py-4 focus-within:border-parchment/35"
+        >
+          <PersonMark className="h-6 w-6 shrink-0 text-ash" />
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
+            className="w-full bg-transparent text-lg text-parchment outline-none placeholder:text-ash/70 disabled:opacity-60"
+            placeholder="you@example.com"
+          />
         </label>
-        <input
-          id="email"
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={busy}
-          className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-          placeholder="you@example.com"
-        />
         <label
           htmlFor="password"
-          className="mt-6 block font-mono text-xs text-ash"
+          className="mt-5 flex items-center gap-4 rounded-2xl border border-parchment/15 px-5 py-4 focus-within:border-parchment/35"
         >
-          your password
+          <LockMark className="h-6 w-6 shrink-0 text-ash" />
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={busy}
+            className="w-full bg-transparent text-lg text-parchment outline-none disabled:opacity-60"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((s) => !s)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className={`shrink-0 ${showPassword ? "text-parchment" : "text-ash"}`}
+          >
+            <EyeMark className="h-6 w-6" />
+          </button>
         </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={busy}
-          className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-        />
-        {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-        <div className="mt-6 flex flex-wrap items-baseline gap-x-6 gap-y-3">
+
+        {error && <p className="mt-5 text-center text-sm text-ash">{error}</p>}
+
+        <div className="mt-10 flex justify-center">
           <button
             type="submit"
             disabled={busy || !email.trim() || !password}
-            className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
+            className="flex items-center gap-3 rounded-2xl bg-cream px-10 py-4 text-lg tracking-wide text-ink disabled:text-ink/50"
           >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={sendCode}
-            disabled={busy}
-            className="font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
-          >
-            first time, or forgot? email me a code
+            <CheckMark className="h-6 w-6 text-ink" />
+            Log In
           </button>
         </div>
+
+        <div className="mx-auto mt-8 flex w-40 items-center gap-4">
+          <span className="h-px flex-1 bg-parchment/15" />
+          <span className="font-mono text-xs tracking-[0.2em] text-ash">or</span>
+          <span className="h-px flex-1 bg-parchment/15" />
+        </div>
+
+        <button
+          type="button"
+          onClick={sendCode}
+          disabled={busy}
+          className="mx-auto mt-6 text-lg tracking-wide text-parchment underline decoration-parchment/40 decoration-1 underline-offset-[6px] disabled:opacity-50"
+        >
+          Sign Up
+        </button>
+
+        <button
+          type="button"
+          onClick={sendCode}
+          disabled={busy}
+          className="mx-auto mt-auto pt-12 font-mono text-sm text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+        >
+          Forgot password?
+        </button>
       </form>
     </div>
   );

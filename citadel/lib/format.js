@@ -9,6 +9,18 @@ export function dateLine(date) {
     .toLowerCase();
 }
 
+// Splash-screen date: no year ("thursday, july 9") — the splash design
+// letterspaces and uppercases it in CSS.
+export function shortDateLine(date) {
+  return date
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    })
+    .toLowerCase();
+}
+
 export function timeLine(date) {
   return date
     .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })

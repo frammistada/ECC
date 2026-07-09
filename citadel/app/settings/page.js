@@ -30,13 +30,15 @@ export default async function SettingsPage() {
           </h1>
           <p className="mt-3 font-mono text-xs text-ash">settings</p>
         </div>
-        <nav className="font-mono text-xs">
-          <Link
-            href="/"
-            className="text-patina underline decoration-1 underline-offset-4"
-          >
+        <nav className="flex items-baseline gap-5 font-mono text-xs">
+          <Link href="/" className="underline decoration-1 underline-offset-4">
             today
           </Link>
+          <form action="/api/signout" method="post">
+            <button type="submit" className="text-ash">
+              sign out
+            </button>
+          </form>
         </nav>
       </header>
 
