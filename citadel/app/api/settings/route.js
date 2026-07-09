@@ -32,6 +32,27 @@ export async function POST(request) {
         : null;
   }
 
+  if (body?.accountabilityName !== undefined) {
+    update.accountability_name =
+      typeof body.accountabilityName === "string"
+        ? body.accountabilityName.trim().slice(0, 80) || null
+        : null;
+  }
+
+  if (body?.accountabilityEmail !== undefined) {
+    const raw =
+      typeof body.accountabilityEmail === "string"
+        ? body.accountabilityEmail.trim().slice(0, 255)
+        : "";
+    if (raw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+      return Response.json(
+        { error: "That doesn't look like an email address." },
+        { status: 400 },
+      );
+    }
+    update.accountability_email = raw || null;
+  }
+
   if (Object.keys(update).length === 0) {
     return Response.json({ error: "Nothing to update." }, { status: 400 });
   }

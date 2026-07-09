@@ -122,6 +122,7 @@ export default async function Home({ searchParams }) {
         initialCount={entryCount ?? 0}
         subscribed={isSubscribed(profile)}
         checkoutSuccess={params?.checkout === "success"}
+        hasAccountabilityContact={Boolean(profile?.accountability_email)}
       />
     </main>
   );
