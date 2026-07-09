@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { isSubscribed } from "@/lib/limits";
 import { dateLine } from "@/lib/format";
@@ -65,11 +66,7 @@ export default async function Home({ searchParams }) {
 
   const [{ data: profile }, { count: entryCount }, { data: todays }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("subscription_status")
-        .eq("id", user.id)
-        .single(),
+      supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase
         .from("entries")
         .select("*", { count: "exact", head: true })
@@ -81,6 +78,13 @@ export default async function Home({ searchParams }) {
         .gte("created_at", startOfDay.toISOString())
         .order("created_at", { ascending: true }),
     ]);
+
+  // First-run: send new users through onboarding before their first entry.
+  // Guarded on an explicit `false` so a pre-migration profile (field
+  // undefined) falls through to the journal rather than looping.
+  if (profile && profile.onboarded === false) {
+    redirect("/onboarding");
+  }
 
   const exchanges = (todays ?? []).map((e) => ({
     entry: e.content,
@@ -95,6 +99,12 @@ export default async function Home({ searchParams }) {
         className="text-patina underline decoration-1 underline-offset-4"
       >
         history
+      </Link>
+      <Link
+        href="/settings"
+        className="text-patina underline decoration-1 underline-offset-4"
+      >
+        settings
       </Link>
       <form action="/api/signout" method="post">
         <button type="submit" className="text-ash">
