@@ -9,8 +9,10 @@ export default function Journal({
   initialCount,
   subscribed,
   checkoutSuccess,
+  hasAccountabilityContact,
 }) {
   const [draft, setDraft] = useState("");
+  const [slipped, setSlipped] = useState(false);
   const [exchanges, setExchanges] = useState(initialExchanges);
   const [entryCount, setEntryCount] = useState(initialCount);
   const [waiting, setWaiting] = useState(false);
@@ -20,6 +22,11 @@ export default function Journal({
   );
   const [openingCheckout, setOpeningCheckout] = useState(false);
 
+  // Accountability draft (item 4): shown for a one-tap send, never auto-sent.
+  const [note, setNote] = useState(null); // { toName, message }
+  const [sending, setSending] = useState(false);
+  const [noteState, setNoteState] = useState(null); // 'sent' | 'error' | null
+
   async function reflect(event) {
     event.preventDefault();
     const entry = draft.trim();
@@ -27,12 +34,14 @@ export default function Journal({
 
     setWaiting(true);
     setError(null);
+    setNote(null);
+    setNoteState(null);
 
     try {
       const res = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entry }),
+        body: JSON.stringify({ entry, slipped }),
       });
       const data = await res.json();
 
@@ -51,6 +60,8 @@ export default function Journal({
       ]);
       setEntryCount(data.entryCount);
       setDraft("");
+      setSlipped(false);
+      if (data.draft) setNote(data.draft);
       if (!subscribed && data.entryCount >= FREE_ENTRY_LIMIT) {
         setPaywalled(true);
       }
@@ -58,6 +69,25 @@ export default function Journal({
       setError("The mentor could not be reached.");
     } finally {
       setWaiting(false);
+    }
+  }
+
+  async function sendNote() {
+    if (sending) return;
+    setSending(true);
+    setNoteState(null);
+    try {
+      const res = await fetch("/api/accountability/send", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setNoteState("error");
+        return;
+      }
+      setNoteState("sent");
+    } catch {
+      setNoteState("error");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -122,6 +152,43 @@ export default function Journal({
         )}
       </section>
 
+      {note && (
+        <section className="mt-12 animate-settle bg-marble p-6">
+          <p className="font-mono text-xs text-ash">
+            a note to {note.toName || "your contact"}
+          </p>
+          <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed text-ink/90">
+            {note.message}
+          </p>
+          {noteState === "sent" ? (
+            <p className="mt-6 font-mono text-xs text-ash">sent</p>
+          ) : (
+            <div className="mt-6 flex items-baseline gap-6">
+              <button
+                type="button"
+                onClick={sendNote}
+                disabled={sending}
+                className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:opacity-50"
+              >
+                Send it
+              </button>
+              <button
+                type="button"
+                onClick={() => setNote(null)}
+                className="font-mono text-xs text-ash underline decoration-1 underline-offset-4"
+              >
+                not now
+              </button>
+              {noteState === "error" && (
+                <span className="font-mono text-xs text-ash">
+                  couldn&apos;t send — try again
+                </span>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
       {paywalled ? (
         <section className="mt-16 border-t border-ash/30 pt-12">
           <p className="text-lg leading-relaxed">
@@ -153,6 +220,20 @@ export default function Journal({
             className="mt-4 w-full resize-y bg-marble p-5 text-lg leading-relaxed text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
             placeholder="Where did you slip, or hold firm."
           />
+
+          {hasAccountabilityContact && (
+            <label className="mt-4 flex cursor-pointer items-center gap-3 font-mono text-xs text-ash">
+              <input
+                type="checkbox"
+                checked={slipped}
+                onChange={(e) => setSlipped(e.target.checked)}
+                disabled={waiting}
+                className="accent-patina"
+              />
+              I fell short of what I set out to do today
+            </label>
+          )}
+
           {error && <p className="mt-4 text-sm text-ash">{error}</p>}
           <div className="mt-6 flex items-baseline justify-between">
             <button

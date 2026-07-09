@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMentorResponse } from "@/lib/mentor";
 import { updatePatternSummary } from "@/lib/summary";
+import { composeAccountabilityMessage } from "@/lib/accountability";
+import { isEmailConfigured } from "@/lib/email";
 import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
 
 const MAX_ENTRY_CHARS = 5000;
@@ -60,6 +62,7 @@ export async function POST(request) {
   const mentorMode = profile?.mentor_mode === "direct" ? "direct" : "steady";
   const patternSummary = profile?.pattern_summary ?? null;
   const preferredName = profile?.preferred_name ?? null;
+  const slipped = body?.slipped === true;
 
   // The mentor reads the last five exchanges so it can hold the writer
   // to their own patterns. This is the product's short-term memory; the
@@ -157,12 +160,12 @@ export async function POST(request) {
           .eq("id", user.id);
       }
 
-      // Item 3: behavioral instrumentation. No goals exist yet, so
-      // goal_status is null for now — the row is groundwork for later.
+      // Item 3: behavioral instrumentation. goal_status carries the slip
+      // signal from item 4's toggle ('missed' when checked, else null).
       await admin.from("user_activity_log").insert({
         user_id: user.id,
         entry_id: saved.id,
-        goal_status: null,
+        goal_status: slipped ? "missed" : null,
         mentor_mode: mentorMode,
         entry_length: entry.length,
       });
@@ -171,8 +174,19 @@ export async function POST(request) {
     }
   });
 
+  // Item 4: only when they marked a slip AND have set a contact AND sending
+  // is configured. The draft is shown for a one-tap send — never auto-sent.
+  const draft =
+    slipped && profile?.accountability_email && isEmailConfigured()
+      ? {
+          toName: profile.accountability_name || null,
+          message: composeAccountabilityMessage(preferredName),
+        }
+      : null;
+
   return Response.json({
     response: mentorText,
     entryCount: (entryCount ?? 0) + 1,
+    draft,
   });
 }

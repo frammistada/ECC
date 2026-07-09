@@ -14,6 +14,9 @@ create table public.profiles (
   preferred_name text,
   onboarding_answers jsonb,
   onboarded boolean not null default false,
+  -- Optional accountability contact (migration 004).
+  accountability_name text,
+  accountability_email text,
   created_at timestamptz not null default now()
 );
 

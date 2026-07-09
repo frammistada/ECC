@@ -15,14 +15,26 @@ const MODES = [
   },
 ];
 
-export default function SettingsForm({ initialMode, initialName }) {
+export default function SettingsForm({
+  initialMode,
+  initialName,
+  initialContactName,
+  initialContactEmail,
+  emailConfigured,
+}) {
   const [mode, setMode] = useState(
     initialMode === "direct" ? "direct" : "steady",
   );
   const [name, setName] = useState(initialName || "");
+  const [contactName, setContactName] = useState(initialContactName || "");
+  const [contactEmail, setContactEmail] = useState(initialContactEmail || "");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
+
+  function touch() {
+    setSaved(false);
+  }
 
   async function save(event) {
     event.preventDefault();
@@ -34,7 +46,12 @@ export default function SettingsForm({ initialMode, initialName }) {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mentorMode: mode, preferredName: name.trim() }),
+        body: JSON.stringify({
+          mentorMode: mode,
+          preferredName: name.trim(),
+          accountabilityName: contactName.trim(),
+          accountabilityEmail: contactEmail.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -93,13 +110,56 @@ export default function SettingsForm({ initialMode, initialName }) {
         value={name}
         onChange={(e) => {
           setName(e.target.value);
-          setSaved(false);
+          touch();
         }}
         maxLength={60}
         disabled={busy}
         className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
         placeholder="a name, or leave it blank"
       />
+
+      <div className="mt-12 border-t border-ash/30 pt-12">
+        <p className="font-mono text-xs text-ash">accountability contact</p>
+        <p className="mt-4 text-sm leading-relaxed text-ash">
+          One person. On a day you mark that you fell short, you&apos;ll be
+          offered a short note to send them — never sent without your tap.
+          Optional; leave blank to keep this off.
+        </p>
+        <input
+          id="contact-name"
+          type="text"
+          value={contactName}
+          onChange={(e) => {
+            setContactName(e.target.value);
+            touch();
+          }}
+          maxLength={80}
+          disabled={busy}
+          aria-label="their name"
+          className="mt-5 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          placeholder="their name"
+        />
+        <input
+          id="contact-email"
+          type="email"
+          value={contactEmail}
+          onChange={(e) => {
+            setContactEmail(e.target.value);
+            touch();
+          }}
+          maxLength={255}
+          disabled={busy}
+          aria-label="their email"
+          className="mt-4 w-full bg-marble p-5 text-lg text-ink outline-none placeholder:text-ash focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          placeholder="their email"
+        />
+        {!emailConfigured && (contactEmail || contactName) && (
+          <p className="mt-4 font-mono text-xs text-ash">
+            note: sending isn&apos;t configured yet, so the draft will show but
+            can&apos;t be sent until it is
+          </p>
+        )}
+      </div>
 
       {error && <p className="mt-6 text-sm text-ash">{error}</p>}
 

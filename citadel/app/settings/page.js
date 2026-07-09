@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { isEmailConfigured } from "@/lib/email";
 import SettingsForm from "@/components/settings-form";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,9 @@ export default async function SettingsPage() {
         <SettingsForm
           initialMode={profile?.mentor_mode}
           initialName={profile?.preferred_name}
+          initialContactName={profile?.accountability_name}
+          initialContactEmail={profile?.accountability_email}
+          emailConfigured={isEmailConfigured()}
         />
       </section>
     </main>
