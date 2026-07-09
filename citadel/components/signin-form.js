@@ -6,9 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 // Flip after the Apple Developer account + Supabase provider config exist.
 const APPLE_ENABLED = false;
 
-// Email flow: address → six-digit code → choose a password → in.
+// Email flow: address → emailed code → choose a password → in.
 // The code is verified in this same tab, so the session lands in the
 // right browser — unlike a magic link opened from a mail app.
+// Code length isn't hardcoded here: it's a Supabase project setting
+// (Authentication → Providers → Email → OTP length), so the input
+// accepts whatever length actually gets sent.
 export default function SigninForm() {
   const [mode, setMode] = useState("start"); // start | code | password-new
   const [email, setEmail] = useState("");
@@ -101,7 +104,7 @@ export default function SigninForm() {
 
   async function verifyCode(event) {
     event.preventDefault();
-    if (busy || code.trim().length < 6) return;
+    if (busy || code.trim().length < 4) return;
     setBusy(true);
     setError(null);
     try {
@@ -149,7 +152,7 @@ export default function SigninForm() {
     return (
       <form onSubmit={verifyCode}>
         <p className="text-lg leading-relaxed">
-          A six-digit code is on its way to {email.trim()}.
+          A code is on its way to {email.trim()}.
         </p>
         <label htmlFor="code" className="mt-8 block font-mono text-xs text-ash">
           the code
@@ -158,7 +161,7 @@ export default function SigninForm() {
           id="code"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={12}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           disabled={busy}
@@ -168,7 +171,7 @@ export default function SigninForm() {
         <div className="mt-6 flex items-baseline gap-6">
           <button
             type="submit"
-            disabled={busy || code.trim().length < 6}
+            disabled={busy || code.trim().length < 4}
             className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:no-underline disabled:opacity-50"
           >
             Continue
