@@ -70,9 +70,16 @@ Tone for this person:
 };
 
 // Prepended to the system prompt before the conversation turns. Tone
-// addendum always; name and summary only when present. All of it is context
-// the mentor may use, not a command.
-export function buildMentorSystem(mentorMode, patternSummary, preferredName) {
+// addendum always; name, background, and summary only when present. All of
+// it is context the mentor may use, not a command.
+// background: { age, aim, note } — the "Who am I" profile. Static: written
+// by the user alone, never summarized or revised by the mentor.
+export function buildMentorSystem(
+  mentorMode,
+  patternSummary,
+  preferredName,
+  background,
+) {
   const addendum = MENTOR_MODE_ADDENDA[mentorMode] || MENTOR_MODE_ADDENDA.steady;
   let system = MENTOR_SYSTEM_PROMPT + "\n" + addendum;
 
@@ -82,6 +89,21 @@ export function buildMentorSystem(mentorMode, patternSummary, preferredName) {
       `\n\nThis person is called ${name}. Use their name when it lands ` +
       "naturally — a plain, direct address — never as a salesman's opener " +
       "and not in every reply.";
+  }
+
+  const lines = [];
+  if (background?.age) lines.push(`They are ${background.age}.`);
+  const aim = (background?.aim || "").trim();
+  if (aim) lines.push(`What they say they are trying to accomplish: ${aim}`);
+  const note = (background?.note || "").trim();
+  if (note) lines.push(`What they chose to tell you about themselves: ${note}`);
+  if (lines.length) {
+    system +=
+      "\n\nBackground this person wrote about themselves. They wrote it " +
+      "once, deliberately, for you — it changes only when they edit it. " +
+      "Let it inform what you ask; do not recite it back or treat their " +
+      "stated aim as beyond question:\n" +
+      lines.join("\n");
   }
 
   const summary = (patternSummary || "").trim();

@@ -122,6 +122,13 @@ export async function POST(request) {
       : "steady";
   const patternSummary = profile?.pattern_summary ?? null;
   const preferredName = profile?.preferred_name ?? null;
+  // "Who am I" static background — read-only context for the mentor,
+  // alongside the short-term (last 5) and long-term (summary) layers.
+  const background = {
+    age: profile?.age ?? null,
+    aim: profile?.aim ?? null,
+    note: profile?.about_note ?? null,
+  };
   const slipped = body?.slipped === true;
 
   // The mentor reads this page's last five exchanges so each page stays
@@ -148,6 +155,7 @@ export async function POST(request) {
       mentorMode,
       patternSummary,
       preferredName,
+      background,
     );
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {

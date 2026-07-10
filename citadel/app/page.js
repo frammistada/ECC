@@ -5,6 +5,7 @@ import { isSubscribed } from "@/lib/limits";
 import { LocalDate } from "@/components/local-date";
 import Journal from "@/components/journal";
 import RingMark from "@/components/ring-mark";
+import NavMenu from "@/components/nav-menu";
 import { BookMark, GearMark } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -95,17 +96,20 @@ export default async function Home({ searchParams }) {
   return (
     <main className="min-h-dvh px-3 py-3">
       <div className="mx-auto flex h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
-        <nav className="flex items-center justify-end gap-6 text-parchment/80">
-          <Link
-            href="/meditations"
-            aria-label="meditations"
-            title="meditations"
-          >
-            <BookMark className="h-6 w-6" />
-          </Link>
-          <Link href="/settings" aria-label="settings" title="settings">
-            <GearMark className="h-6 w-6" />
-          </Link>
+        <nav className="flex items-center justify-between text-parchment/80">
+          <NavMenu />
+          <div className="flex items-center gap-6">
+            <Link
+              href="/meditations"
+              aria-label="meditations"
+              title="meditations"
+            >
+              <BookMark className="h-6 w-6" />
+            </Link>
+            <Link href="/settings" aria-label="settings" title="settings">
+              <GearMark className="h-6 w-6" />
+            </Link>
+          </div>
         </nav>
         <div className="flex min-h-0 flex-1 flex-col justify-center">
         <header className="mt-4 text-center">

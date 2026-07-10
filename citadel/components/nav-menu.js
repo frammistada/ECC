@@ -1,0 +1,73 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { MenuMark } from "@/components/icons";
+
+// The app-sections drawer, opened from the hamburger in the top-left of
+// the entry screen. The trigger is a symbol like the rest of the nav; the
+// list inside uses text labels because sections need names. Unbuilt
+// sections are shown grayed out (not hidden) with a mono "soon" tag, so
+// the shape of the app is visible before every room exists.
+const SECTIONS = [
+  { label: "Who am I", href: "/who-am-i" },
+  { label: "To Myself" },
+  { label: "Reminders" },
+  { label: "No-Mentor Journaling" },
+];
+
+export default function NavMenu() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="menu"
+        title="menu"
+      >
+        <MenuMark className="h-6 w-6" />
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-night/80"
+          onClick={() => setOpen(false)}
+        >
+          <nav
+            aria-label="app sections"
+            className="h-full w-72 max-w-[80vw] animate-settle border-r border-parchment/15 bg-panel px-6 pt-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="px-4 font-mono text-xs tracking-[0.2em] text-ash">
+              citadel
+            </p>
+            <ul className="mt-5 flex flex-col gap-1.5">
+              {SECTIONS.map((s) => (
+                <li key={s.label}>
+                  {s.href ? (
+                    <Link
+                      href={s.href}
+                      onClick={() => setOpen(false)}
+                      className="block border-l border-ash/30 px-4 py-3 text-lg text-parchment transition-colors hover:bg-parchment/10"
+                    >
+                      {s.label}
+                    </Link>
+                  ) : (
+                    <span className="flex items-baseline justify-between gap-3 border-l border-ash/15 px-4 py-3 text-lg text-parchment/35">
+                      {s.label}
+                      <span className="font-mono text-[10px] text-ash/70">
+                        soon
+                      </span>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
+    </>
+  );
+}
