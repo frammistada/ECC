@@ -86,7 +86,7 @@ export default async function Home({ searchParams }) {
 
   return (
     <main className="min-h-dvh px-3 py-3">
-      <div className="mx-auto flex min-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
+      <div className="mx-auto flex h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
         <nav className="flex items-center justify-end gap-6 text-parchment/80">
           <Link href="/history" aria-label="history" title="history">
             <BookMark className="h-6 w-6" />
@@ -95,7 +95,7 @@ export default async function Home({ searchParams }) {
             <GearMark className="h-6 w-6" />
           </Link>
         </nav>
-        <div className="flex flex-1 flex-col justify-center">
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
         <header className="mt-4 text-center">
           <RingMark className="mx-auto h-14 w-14 text-parchment/60" />
           <h1 className="mt-4 font-display text-4xl font-light tracking-[0.14em] text-parchment">

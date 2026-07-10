@@ -85,8 +85,9 @@ project (id `ktztzjajwhlgqsbrcftk`).
   `components/icons.js` only: the sign-in set plus book (history) and gear
   (settings) nav symbols; no sparkles or decorative extras.
 - **No scrolling on primary screens**: splash, sign-in, onboarding, and the
-  empty entry screen must each fit one phone viewport. Only history,
-  settings, and a day with written exchanges may scroll.
+  entry screen never page-scroll. On the entry screen only the exchange
+  region scrolls internally (header and entry form stay fixed). History and
+  settings are the only pages that scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin
