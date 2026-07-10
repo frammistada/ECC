@@ -17,6 +17,11 @@ create table public.profiles (
   -- Optional accountability contact (migration 004).
   accountability_name text,
   accountability_email text,
+  -- "Who am I" static background for the mentor (migration 006).
+  -- Only the user edits these; never machine-written or summarized.
+  age integer check (age between 5 and 120),
+  aim text,
+  about_note text,
   created_at timestamptz not null default now()
 );
 

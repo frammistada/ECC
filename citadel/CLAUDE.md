@@ -24,6 +24,16 @@ came before. This file loads every session; keep it concise and current.
   by a cheap Haiku call after each entry (revise, don't restart) and prepended to
   the mentor's system prompt. The summary update + activity log run in Next's
   `after()` so they add zero latency and never block/break the reply.
+- **"Who am I" (static background).** A third context layer beside the two
+  above: `profiles.age/aim/about_note` (+ the shared `preferred_name`),
+  edited only at `/who-am-i` (reached from the hamburger drawer), injected
+  into the mentor's system prompt on every entry by `buildMentorSystem`.
+  User-written only — never summarized, never machine-revised, not gated
+  behind the subscription. Saves through the same `/api/settings` updater.
+- **Sections drawer.** Hamburger (top-left of the entry screen,
+  `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
+  sections (To Myself, Reminders, No-Mentor Journaling) stay visible but
+  grayed out with a mono "soon" tag — add them here first, then build.
 - **Mentor mode.** 7-question scenario onboarding (`lib/onboarding.js`, asked
   one question per screen) scores
   `direct` vs `steady` (steady = safe default). Stored on `profiles.mentor_mode`;
@@ -57,7 +67,8 @@ came before. This file loads every session; keep it concise and current.
 ## Data model (Supabase)
 
 `profiles` (id, email, subscription_status, stripe_*, pattern_summary, mentor_mode,
-preferred_name, onboarding_answers, onboarded, accountability_name/email) ·
+preferred_name, onboarding_answers, onboarded, accountability_name/email,
+age/aim/about_note) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
 `entries` (user_id, meditation_id, content) · `responses` (entry_id, content) ·
 `user_activity_log` (per-entry: mentor_mode, entry_length, goal_status — logging
@@ -94,11 +105,13 @@ project (id `ktztzjajwhlgqsbrcftk`).
   beside/above the Citadel title on every screen. Icons live in
   `components/icons.js` only: the sign-in set plus the nav symbols — book
   (meditations), gear (settings), arrow (back to today), door (sign out),
-  plus/dots (meditations page). Nav is symbols, not text.
+  plus/dots (meditations page), menu/hamburger (sections drawer). Nav
+  triggers are symbols, not text; the one exception is the drawer's list
+  itself, which uses text labels because sections need names.
 - **No scrolling on primary screens**: splash, sign-in, onboarding, entry
   pages, and meditations never page-scroll. Entry pages scroll only their
-  exchange region; meditations scrolls only its list. Settings is the only
-  page that scrolls.
+  exchange region; meditations scrolls only its list. Settings and
+  Who am I are the only pages that scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin

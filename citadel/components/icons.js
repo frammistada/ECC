@@ -1,7 +1,26 @@
 // Inline icons — the sign-in set from the reference design (Google "G",
 // person, lock, eye, Log In check) plus the nav symbols: book for
 // meditations, gear for settings, arrow for back-to-today, door for sign
-// out, and the plus/dots marks used on the meditations page.
+// out, the plus/dots marks used on the meditations page, and the menu
+// (hamburger) mark that opens the sections drawer.
+export function MenuMark({ className }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
+
 export function ArrowLeftMark({ className }) {
   return (
     <svg

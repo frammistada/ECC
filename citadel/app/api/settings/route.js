@@ -53,6 +53,35 @@ export async function POST(request) {
     update.accountability_email = raw || null;
   }
 
+  // "Who am I" background fields (migration 006). Blank clears the field.
+  if (body?.age !== undefined) {
+    const raw = typeof body.age === "string" ? body.age.trim() : body.age;
+    if (raw === "" || raw === null) {
+      update.age = null;
+    } else {
+      const age = Number(raw);
+      if (!Number.isInteger(age) || age < 5 || age > 120) {
+        return Response.json(
+          { error: "That age doesn't look right." },
+          { status: 400 },
+        );
+      }
+      update.age = age;
+    }
+  }
+
+  if (body?.aim !== undefined) {
+    update.aim =
+      typeof body.aim === "string" ? body.aim.trim().slice(0, 1000) || null : null;
+  }
+
+  if (body?.aboutNote !== undefined) {
+    update.about_note =
+      typeof body.aboutNote === "string"
+        ? body.aboutNote.trim().slice(0, 2000) || null
+        : null;
+  }
+
   if (Object.keys(update).length === 0) {
     return Response.json({ error: "Nothing to update." }, { status: 400 });
   }
