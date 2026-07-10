@@ -111,6 +111,10 @@ export default function Journal({
 
   return (
     <>
+      {/* The one scrollable region: the day's exchanges (and the drafted
+          note). Header and entry form stay fixed so the mentor's answer
+          can be reread without scrolling the page. */}
+      <div className="min-h-0 overflow-y-auto">
       <section className="mt-8">
         {checkoutSuccess && !subscribed && (
           <p className="mb-10 font-mono text-xs text-ash">
@@ -189,6 +193,8 @@ export default function Journal({
         </section>
       )}
 
+      </div>
+
       {paywalled ? (
         <section className="mt-16 border-t border-ash/30 pt-12">
           <p className="text-lg leading-relaxed">
@@ -217,7 +223,7 @@ export default function Journal({
             id="entry"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            rows={6}
+            rows={exchanges.length > 0 ? 3 : 6}
             maxLength={5000}
             disabled={waiting}
             className="mt-4 w-full resize-y rounded-xl bg-marble p-4 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
