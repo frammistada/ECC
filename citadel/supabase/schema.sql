@@ -20,10 +20,22 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- Named entry pages (migration 005). Each is its own chat with the mentor;
+-- auto_day marks the day's automatic page. mentor_mode null = profile's mode.
+create table public.meditations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  mentor_mode text check (mentor_mode in ('direct', 'steady')),
+  auto_day date,
+  created_at timestamptz not null default now()
+);
+
 create table public.entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   content text not null,
+  meditation_id uuid references public.meditations (id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
@@ -46,6 +58,12 @@ create table public.user_activity_log (
   created_at timestamptz not null default now()
 );
 
+create unique index meditations_user_auto_day_idx
+  on public.meditations (user_id, auto_day)
+  where auto_day is not null;
+create index meditations_user_created_idx
+  on public.meditations (user_id, created_at desc);
+create index entries_meditation_idx on public.entries (meditation_id);
 create index entries_user_created_idx on public.entries (user_id, created_at desc);
 create index responses_entry_idx on public.responses (entry_id);
 create index profiles_stripe_customer_idx on public.profiles (stripe_customer_id);
@@ -55,6 +73,7 @@ create index user_activity_log_user_created_idx
 -- Entries are private. RLS everywhere; the Stripe webhook uses the
 -- service-role key and is the only thing that writes subscription_status.
 alter table public.profiles enable row level security;
+alter table public.meditations enable row level security;
 alter table public.entries enable row level security;
 alter table public.responses enable row level security;
 alter table public.user_activity_log enable row level security;
@@ -72,6 +91,19 @@ create policy "update own profile" on public.profiles
 -- Activity log is read-only to the user; rows are written server-side.
 create policy "read own activity" on public.user_activity_log
   for select using ((select auth.uid()) = user_id);
+
+create policy "read own meditations" on public.meditations
+  for select using ((select auth.uid()) = user_id);
+
+create policy "create own meditations" on public.meditations
+  for insert with check ((select auth.uid()) = user_id);
+
+create policy "update own meditations" on public.meditations
+  for update using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+create policy "delete own meditations" on public.meditations
+  for delete using ((select auth.uid()) = user_id);
 
 create policy "read own entries" on public.entries
   for select using ((select auth.uid()) = user_id);

@@ -10,6 +10,7 @@ export default function Journal({
   subscribed,
   checkoutSuccess,
   hasAccountabilityContact,
+  meditationId = null,
 }) {
   const [draft, setDraft] = useState("");
   const [slipped, setSlipped] = useState(false);
@@ -41,7 +42,7 @@ export default function Journal({
       const res = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entry, slipped }),
+        body: JSON.stringify({ entry, slipped, meditationId }),
       });
       const data = await res.json();
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import RingMark from "@/components/ring-mark";
+import { ArrowLeftMark, SignOutMark } from "@/components/icons";
 import { isEmailConfigured } from "@/lib/email";
 import SettingsForm from "@/components/settings-form";
 
@@ -34,13 +35,13 @@ export default async function SettingsPage() {
           </div>
           <p className="mt-3 font-mono text-xs text-ash">settings</p>
         </div>
-        <nav className="flex items-baseline gap-5 font-mono text-xs">
-          <Link href="/" className="underline decoration-1 underline-offset-4">
-            today
+        <nav className="flex items-center gap-5 text-parchment/80">
+          <Link href="/" aria-label="back to today" title="back to today">
+            <ArrowLeftMark className="h-6 w-6" />
           </Link>
-          <form action="/api/signout" method="post">
-            <button type="submit" className="text-ash">
-              sign out
+          <form action="/api/signout" method="post" className="flex">
+            <button type="submit" aria-label="sign out" title="sign out">
+              <SignOutMark className="h-6 w-6" />
             </button>
           </form>
         </nav>

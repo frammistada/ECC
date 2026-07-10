@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dateLine, shortDateLine, timeLine } from "@/lib/format";
+import { dateLine, dayLine, shortDateLine, timeLine } from "@/lib/format";
 
 // Dates rendered in the viewer's own timezone. Server components render with
 // the deployment's clock (UTC on Vercel), which near midnight is a different
@@ -16,6 +16,14 @@ export function LocalDate({ variant = "long" }) {
     setText(variant === "short" ? shortDateLine(now) : dateLine(now));
   }, [variant]);
   return <>{text || " "}</>;
+}
+
+export function LocalDay({ iso }) {
+  const [text, setText] = useState("");
+  useEffect(() => {
+    setText(dayLine(new Date(iso)));
+  }, [iso]);
+  return <>{text || "\u00A0"}</>;
 }
 
 export function LocalStamp({ iso, withDate = false }) {
