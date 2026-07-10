@@ -34,6 +34,12 @@ came before. This file loads every session; keep it concise and current.
   `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
   sections (To Myself, Reminders, No-Mentor Journaling) stay visible but
   grayed out with a mono "soon" tag — add them here first, then build.
+  Below the sections: "export my data" — a plain anchor to `/api/export`.
+- **Data export (trust feature — never gate it).** `GET /api/export`
+  streams every entry + mentor response (all pages, oldest first) as a
+  plain-text download (`lib/export.js` builds the text). User-written
+  content only — no pattern_summary, no open_loops, no instrumentation.
+  Free on every tier, no rate limit, by design.
 - **Open loops.** After each reflect, a Haiku call (`lib/loops.js`) extracts
   0–2 stated intentions/commitments/unresolved tensions (none forced; it
   sees what's already tracked so it never duplicates). Stored in
