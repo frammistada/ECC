@@ -5,6 +5,7 @@ import { isSubscribed } from "@/lib/limits";
 import { LocalDate } from "@/components/local-date";
 import Journal from "@/components/journal";
 import RingMark from "@/components/ring-mark";
+import { BookMark, GearMark } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -85,32 +86,33 @@ export default async function Home({ searchParams }) {
 
   return (
     <main className="min-h-dvh px-3 py-3">
-      <div className="mx-auto flex min-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col rounded-[28px] border border-parchment/10 px-5 pb-12 pt-7 sm:px-9">
-        <nav className="flex items-baseline justify-end gap-6 font-mono text-sm text-parchment">
-          <Link
-            href="/history"
-            className="underline decoration-1 underline-offset-4"
-          >
-            history
+      <div className="mx-auto flex min-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
+        <nav className="flex items-center justify-end gap-6 text-parchment/80">
+          <Link href="/history" aria-label="history" title="history">
+            <BookMark className="h-6 w-6" />
           </Link>
-          <Link href="/settings">settings</Link>
+          <Link href="/settings" aria-label="settings" title="settings">
+            <GearMark className="h-6 w-6" />
+          </Link>
         </nav>
-        <header className="mt-6 text-center">
-          <RingMark className="mx-auto h-[70px] w-[70px] text-parchment/60" />
-          <h1 className="mt-5 font-display text-4xl font-light tracking-[0.14em] text-parchment">
+        <div className="flex flex-1 flex-col justify-center">
+        <header className="mt-4 text-center">
+          <RingMark className="mx-auto h-14 w-14 text-parchment/60" />
+          <h1 className="mt-4 font-display text-4xl font-light tracking-[0.14em] text-parchment">
             Citadel
           </h1>
-          <p className="mt-3 font-mono text-sm tracking-[0.08em] text-ash">
+          <p className="mt-2 font-mono text-xs tracking-[0.08em] text-ash">
             <LocalDate />
           </p>
         </header>
-        <Journal
-          initialExchanges={exchanges}
-          initialCount={entryCount ?? 0}
-          subscribed={isSubscribed(profile)}
-          checkoutSuccess={params?.checkout === "success"}
-          hasAccountabilityContact={Boolean(profile?.accountability_email)}
-        />
+          <Journal
+            initialExchanges={exchanges}
+            initialCount={entryCount ?? 0}
+            subscribed={isSubscribed(profile)}
+            checkoutSuccess={params?.checkout === "success"}
+            hasAccountabilityContact={Boolean(profile?.accountability_email)}
+          />
+        </div>
       </div>
     </main>
   );

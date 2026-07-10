@@ -237,14 +237,14 @@ export default function SigninForm() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-col">
       <button
         type="button"
         onClick={() => withProvider("google")}
         disabled={busy}
-        className="mt-12 flex w-full items-center justify-center gap-4 rounded-2xl bg-cream px-6 py-4 text-lg tracking-wide text-ink disabled:opacity-50"
+        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-cream px-6 py-3.5 text-base tracking-wide text-ink disabled:opacity-50"
       >
-        <GoogleMark className="h-6 w-6" />
+        <GoogleMark className="h-5 w-5" />
         Continue with Google
       </button>
       {APPLE_ENABLED && (
@@ -252,13 +252,13 @@ export default function SigninForm() {
           type="button"
           onClick={() => withProvider("apple")}
           disabled={busy}
-          className="mt-4 flex w-full items-center justify-center gap-4 rounded-2xl bg-cream px-6 py-4 text-lg tracking-wide text-ink disabled:opacity-50"
+          className="mt-3 flex w-full items-center justify-center gap-3 rounded-2xl bg-cream px-6 py-3.5 text-base tracking-wide text-ink disabled:opacity-50"
         >
           Continue with Apple
         </button>
       )}
 
-      <div className="mt-12 flex items-center gap-5">
+      <div className="mt-5 flex items-center gap-5">
         <span className="h-px flex-1 bg-parchment/15" />
         <span className="font-mono text-sm tracking-[0.25em] text-ash">
           or sign in
@@ -266,12 +266,12 @@ export default function SigninForm() {
         <span className="h-px flex-1 bg-parchment/15" />
       </div>
 
-      <form onSubmit={signInWithPassword} className="mt-10 flex flex-1 flex-col">
+      <form onSubmit={signInWithPassword} className="mt-5 flex flex-col">
         <label
           htmlFor="email"
-          className="flex items-center gap-4 rounded-2xl border border-parchment/15 px-5 py-4 focus-within:border-parchment/35"
+          className="flex items-center gap-3 rounded-2xl border border-parchment/15 px-5 py-3.5 focus-within:border-parchment/35"
         >
-          <PersonMark className="h-6 w-6 shrink-0 text-ash" />
+          <PersonMark className="h-5 w-5 shrink-0 text-ash" />
           <input
             id="email"
             type="email"
@@ -280,15 +280,15 @@ export default function SigninForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={busy}
-            className="w-full bg-transparent text-lg text-parchment outline-none placeholder:text-ash/70 disabled:opacity-60"
+            className="w-full bg-transparent text-base text-parchment outline-none placeholder:text-ash/70 disabled:opacity-60"
             placeholder="you@example.com"
           />
         </label>
         <label
           htmlFor="password"
-          className="mt-5 flex items-center gap-4 rounded-2xl border border-parchment/15 px-5 py-4 focus-within:border-parchment/35"
+          className="mt-4 flex items-center gap-3 rounded-2xl border border-parchment/15 px-5 py-3.5 focus-within:border-parchment/35"
         >
-          <LockMark className="h-6 w-6 shrink-0 text-ash" />
+          <LockMark className="h-5 w-5 shrink-0 text-ash" />
           <input
             id="password"
             type={showPassword ? "text" : "password"}
@@ -296,7 +296,7 @@ export default function SigninForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={busy}
-            className="w-full bg-transparent text-lg text-parchment outline-none disabled:opacity-60"
+            className="w-full bg-transparent text-base text-parchment outline-none disabled:opacity-60"
           />
           <button
             type="button"
@@ -304,24 +304,24 @@ export default function SigninForm() {
             aria-label={showPassword ? "Hide password" : "Show password"}
             className={`shrink-0 ${showPassword ? "text-parchment" : "text-ash"}`}
           >
-            <EyeMark className="h-6 w-6" />
+            <EyeMark className="h-5 w-5" />
           </button>
         </label>
 
-        {error && <p className="mt-5 text-center text-sm text-ash">{error}</p>}
+        {error && <p className="mt-4 text-center text-sm text-ash">{error}</p>}
 
-        <div className="mt-10 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <button
             type="submit"
             disabled={busy || !email.trim() || !password}
-            className="flex items-center gap-3 rounded-2xl bg-cream px-10 py-4 text-lg tracking-wide text-ink disabled:text-ink/50"
+            className="flex items-center gap-3 rounded-2xl bg-cream px-9 py-3.5 text-base tracking-wide text-ink disabled:text-ink/50"
           >
-            <CheckMark className="h-6 w-6 text-ink" />
+            <CheckMark className="h-5 w-5 text-ink" />
             Log In
           </button>
         </div>
 
-        <div className="mx-auto mt-8 flex w-40 items-center gap-4">
+        <div className="mx-auto mt-4 flex w-40 items-center gap-4">
           <span className="h-px flex-1 bg-parchment/15" />
           <span className="font-mono text-xs tracking-[0.2em] text-ash">or</span>
           <span className="h-px flex-1 bg-parchment/15" />
@@ -331,7 +331,7 @@ export default function SigninForm() {
           type="button"
           onClick={sendCode}
           disabled={busy}
-          className="mx-auto mt-6 text-lg tracking-wide text-parchment underline decoration-parchment/40 decoration-1 underline-offset-[6px] disabled:opacity-50"
+          className="mx-auto mt-3 text-base tracking-wide text-parchment underline decoration-parchment/40 decoration-1 underline-offset-[6px] disabled:opacity-50"
         >
           Sign Up
         </button>
@@ -340,7 +340,7 @@ export default function SigninForm() {
           type="button"
           onClick={sendCode}
           disabled={busy}
-          className="mx-auto mt-auto pt-12 font-mono text-sm text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+          className="mx-auto mt-6 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
         >
           Forgot password?
         </button>

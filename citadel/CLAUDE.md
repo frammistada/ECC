@@ -81,8 +81,12 @@ project (id `ktztzjajwhlgqsbrcftk`).
   elsewhere. No gradients, no pure black/white, no purple/indigo/neon.
 - **Shell**: thin wavy border framing every screen (`.wavy-frame`, global in
   `app/layout.js`) + the interlocking-rings mark (`components/ring-mark.js`)
-  above the Citadel title. No other icons beyond the sign-in set in
-  `components/icons.js`; no sparkles or decorative extras.
+  beside/above the Citadel title on every screen. Icons live in
+  `components/icons.js` only: the sign-in set plus book (history) and gear
+  (settings) nav symbols; no sparkles or decorative extras.
+- **No scrolling on primary screens**: splash, sign-in, onboarding, and the
+  empty entry screen must each fit one phone viewport. Only history,
+  settings, and a day with written exchanges may scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin
