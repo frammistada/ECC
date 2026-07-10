@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMentorResponse } from "@/lib/mentor";
 import { updatePatternSummary } from "@/lib/summary";
+import {
+  extractOpenLoops,
+  OPEN_LOOPS_REQUIRE_SUBSCRIPTION,
+  OPEN_LOOPS_IN_CONTEXT,
+} from "@/lib/loops";
 import { composeAccountabilityMessage } from "@/lib/accountability";
 import { isEmailConfigured } from "@/lib/email";
 import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
@@ -131,16 +136,34 @@ export async function POST(request) {
   };
   const slipped = body?.slipped === true;
 
+  // Open loops: intentions/commitments from earlier entries, followed up
+  // if the user goes quiet on them. Injection is behind the subscription
+  // flag (off until the paywall lands); extraction below always runs so
+  // the history exists the day it flips on.
+  const loopsInContext =
+    !OPEN_LOOPS_REQUIRE_SUBSCRIPTION || isSubscribed(profile);
+
   // The mentor reads this page's last five exchanges so each page stays
   // its own conversation. This is the product's short-term memory; the
   // rolling pattern_summary above is the long-term memory.
-  const { data: recent } = await supabase
-    .from("entries")
-    .select("content, responses(content)")
-    .eq("user_id", user.id)
-    .eq("meditation_id", meditation.id)
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const [{ data: recent }, { data: openLoops }] = await Promise.all([
+    supabase
+      .from("entries")
+      .select("content, responses(content)")
+      .eq("user_id", user.id)
+      .eq("meditation_id", meditation.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    loopsInContext
+      ? supabase
+          .from("open_loops")
+          .select("description, created_at")
+          .eq("user_id", user.id)
+          .eq("resolved", false)
+          .order("created_at", { ascending: false })
+          .limit(OPEN_LOOPS_IN_CONTEXT)
+      : Promise.resolve({ data: null }),
+  ]);
 
   const history = (recent ?? [])
     .filter((e) => e.responses?.[0]?.content)
@@ -156,6 +179,7 @@ export async function POST(request) {
       patternSummary,
       preferredName,
       background,
+      openLoops ?? null,
     );
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
@@ -238,6 +262,30 @@ export async function POST(request) {
         mentor_mode: mentorMode,
         entry_length: entry.length,
       });
+
+      // Open loops: extract 0–2 from this exchange. The extractor sees
+      // everything currently unresolved so it doesn't re-track a loop.
+      const { data: allOpen } = await admin
+        .from("open_loops")
+        .select("description")
+        .eq("user_id", user.id)
+        .eq("resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      const found = await extractOpenLoops(
+        entry,
+        mentorText,
+        (allOpen ?? []).map((l) => l.description),
+      );
+      if (found.length) {
+        await admin.from("open_loops").insert(
+          found.map((description) => ({
+            user_id: user.id,
+            entry_id: saved.id,
+            description,
+          })),
+        );
+      }
     } catch (err) {
       console.error("[reflect] post-response work failed", err);
     }

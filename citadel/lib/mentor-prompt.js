@@ -70,15 +70,18 @@ Tone for this person:
 };
 
 // Prepended to the system prompt before the conversation turns. Tone
-// addendum always; name, background, and summary only when present. All of
-// it is context the mentor may use, not a command.
+// addendum always; name, background, summary, and open loops only when
+// present. All of it is context the mentor may use, not a command.
 // background: { age, aim, note } — the "Who am I" profile. Static: written
 // by the user alone, never summarized or revised by the mentor.
+// openLoops: [{ description, created_at }] — unresolved intentions from
+// earlier entries, newest first, at most 3.
 export function buildMentorSystem(
   mentorMode,
   patternSummary,
   preferredName,
   background,
+  openLoops,
 ) {
   const addendum = MENTOR_MODE_ADDENDA[mentorMode] || MENTOR_MODE_ADDENDA.steady;
   let system = MENTOR_SYSTEM_PROMPT + "\n" + addendum;
@@ -113,6 +116,29 @@ export function buildMentorSystem(
       "entries. Treat this as background you have noticed, not as fact to " +
       "recite. Only raise a pattern when this entry genuinely touches it:\n" +
       summary;
+  }
+
+  const loops = (openLoops || []).filter((l) => l?.description);
+  if (loops.length) {
+    const now = Date.now();
+    const lines = loops.map((l) => {
+      const days = Math.floor(
+        (now - new Date(l.created_at).getTime()) / 86400000,
+      );
+      const when =
+        days <= 0 ? "earlier today" : days === 1 ? "yesterday" : `${days} days ago`;
+      return `- ${l.description} (${when})`;
+    });
+    system +=
+      "\n\nThings this person said they would do, or left unresolved, in " +
+      "earlier entries — and has not mentioned since:\n" +
+      lines.join("\n") +
+      "\nIf tonight's entry touches one of these, or one has sat quiet and " +
+      "the entry gives a natural opening, ask about it directly — people " +
+      "often go silent on exactly the commitment they dropped. At most one " +
+      "per reply, only when it genuinely fits. Do not recite the list, do " +
+      "not turn this into an accounting, and let a loop go unmentioned when " +
+      "the entry needs its own question more.";
   }
   return system;
 }
