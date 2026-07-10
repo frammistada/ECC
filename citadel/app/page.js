@@ -53,10 +53,8 @@ export default async function Home({ searchParams }) {
 
   const params = await searchParams;
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const [{ data: profile }, { count: entryCount }, { data: todays }] =
+  const today = new Date().toISOString().slice(0, 10);
+  const [{ data: profile }, { count: entryCount }, { data: todayMed }] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase
@@ -64,12 +62,22 @@ export default async function Home({ searchParams }) {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id),
       supabase
+        .from("meditations")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("auto_day", today)
+        .maybeSingle(),
+    ]);
+
+  // Today's writing lives on the day's automatic page (created by the
+  // first reflect of the day, so it may not exist yet).
+  const { data: todays } = todayMed
+    ? await supabase
         .from("entries")
         .select("content, created_at, responses(content)")
-        .eq("user_id", user.id)
-        .gte("created_at", startOfDay.toISOString())
-        .order("created_at", { ascending: true }),
-    ]);
+        .eq("meditation_id", todayMed.id)
+        .order("created_at", { ascending: true })
+    : { data: [] };
 
   // First-run: send new users through onboarding before their first entry.
   // Guarded on an explicit `false` so a pre-migration profile (field
@@ -88,7 +96,11 @@ export default async function Home({ searchParams }) {
     <main className="min-h-dvh px-3 py-3">
       <div className="mx-auto flex h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
         <nav className="flex items-center justify-end gap-6 text-parchment/80">
-          <Link href="/history" aria-label="history" title="history">
+          <Link
+            href="/meditations"
+            aria-label="meditations"
+            title="meditations"
+          >
             <BookMark className="h-6 w-6" />
           </Link>
           <Link href="/settings" aria-label="settings" title="settings">

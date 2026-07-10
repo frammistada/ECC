@@ -36,6 +36,14 @@ came before. This file loads every session; keep it concise and current.
   "email me a code" path doubles as first-time signup AND password reset.
 - **Scarcity.** 5 free reflections (`lib/limits.js`), enforced server-side in
   `app/api/reflect/route.js` (402 + paywall), then Stripe.
+- **Meditations (entry pages).** Every entry belongs to a `meditations` row —
+  a named page that is its own chat. The day's page is auto-created by the
+  first reflect (`auto_day` set, unique per user/day, server-UTC day); users
+  create standalone pages from /meditations (name + per-page `mentor_mode`,
+  null = profile default — page mode wins in `/api/reflect`, and the mentor's
+  5-exchange short-term memory is scoped per page). Pages are renamed,
+  re-moded, and deleted (confirmation dialog, cascade) via
+  `/api/meditations[/id]`. /history redirects to /meditations.
 - **Accountability (opt-in).** Optional contact in settings. An "I fell short today"
   toggle on the entry → after the reply, a pre-drafted note with one-tap send via
   Brevo. Never auto-sent; recipient resolved server-side from the user's own
@@ -50,7 +58,8 @@ came before. This file loads every session; keep it concise and current.
 
 `profiles` (id, email, subscription_status, stripe_*, pattern_summary, mentor_mode,
 preferred_name, onboarding_answers, onboarded, accountability_name/email) ·
-`entries` (user_id, content) · `responses` (entry_id, content) ·
+`meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
+`entries` (user_id, meditation_id, content) · `responses` (entry_id, content) ·
 `user_activity_log` (per-entry: mentor_mode, entry_length, goal_status — logging
 only, nothing acts on it yet). Canonical DDL in `supabase/schema.sql`; changes go
 through numbered files in `supabase/migrations/` AND get applied to the live
@@ -63,7 +72,8 @@ project (id `ktztzjajwhlgqsbrcftk`).
   accountability draft/send (live — `BREVO_API_KEY` + `ACCOUNTABILITY_FROM_EMAIL`
   are set in Vercel), instrumentation logging. Dark-shell v1 UI per
   `citadel_ui_spec.md`: splash, sign-in, and main entry match the reference
-  designs; history/settings/onboarding are minimally restyled placeholders.
+  designs; meditations (named entry pages, per-page mentor mode, manage/
+  delete) built; settings/onboarding are minimally restyled placeholders.
 - **Pending / needs the user:** reference designs for history, settings,
   onboarding, and the paywall (paywall styling deliberately untouched until
   designed); a payment provider decision
@@ -82,12 +92,13 @@ project (id `ktztzjajwhlgqsbrcftk`).
 - **Shell**: thin wavy border framing every screen (`.wavy-frame`, global in
   `app/layout.js`) + the interlocking-rings mark (`components/ring-mark.js`)
   beside/above the Citadel title on every screen. Icons live in
-  `components/icons.js` only: the sign-in set plus book (history) and gear
-  (settings) nav symbols; no sparkles or decorative extras.
-- **No scrolling on primary screens**: splash, sign-in, onboarding, and the
-  entry screen never page-scroll. On the entry screen only the exchange
-  region scrolls internally (header and entry form stay fixed). History and
-  settings are the only pages that scroll.
+  `components/icons.js` only: the sign-in set plus the nav symbols — book
+  (meditations), gear (settings), arrow (back to today), door (sign out),
+  plus/dots (meditations page). Nav is symbols, not text.
+- **No scrolling on primary screens**: splash, sign-in, onboarding, entry
+  pages, and meditations never page-scroll. Entry pages scroll only their
+  exchange region; meditations scrolls only its list. Settings is the only
+  page that scrolls.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin

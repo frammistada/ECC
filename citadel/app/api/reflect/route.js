@@ -7,6 +7,7 @@ import { updatePatternSummary } from "@/lib/summary";
 import { composeAccountabilityMessage } from "@/lib/accountability";
 import { isEmailConfigured } from "@/lib/email";
 import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
+import { dateLine } from "@/lib/format";
 
 const MAX_ENTRY_CHARS = 5000;
 
@@ -59,18 +60,78 @@ export async function POST(request) {
     );
   }
 
-  const mentorMode = profile?.mentor_mode === "direct" ? "direct" : "steady";
+  // Each entry belongs to a meditation (an entry page). A meditationId in
+  // the body targets a specific page; otherwise the day's automatic page
+  // is found or created on first write.
+  let meditation = null;
+  if (typeof body?.meditationId === "string" && body.meditationId) {
+    const { data: med } = await supabase
+      .from("meditations")
+      .select("*")
+      .eq("id", body.meditationId)
+      .maybeSingle();
+    if (!med) {
+      return Response.json({ error: "That page is gone." }, { status: 404 });
+    }
+    meditation = med;
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: existing } = await supabase
+      .from("meditations")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("auto_day", today)
+      .maybeSingle();
+    meditation = existing;
+    if (!meditation) {
+      const { data: created, error: medError } = await supabase
+        .from("meditations")
+        .insert({
+          user_id: user.id,
+          name: dateLine(new Date()),
+          auto_day: today,
+        })
+        .select("*")
+        .single();
+      if (medError) {
+        // A concurrent write may have created it — re-read before failing.
+        const { data: raced } = await supabase
+          .from("meditations")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("auto_day", today)
+          .maybeSingle();
+        if (!raced) {
+          console.error("[reflect] meditation create failed", medError);
+          return Response.json(
+            { error: "Something failed. Your words were not lost — try again." },
+            { status: 500 },
+          );
+        }
+        meditation = raced;
+      } else {
+        meditation = created;
+      }
+    }
+  }
+
+  // Page-level mode wins; the profile's mode is the default.
+  const mentorMode =
+    (meditation?.mentor_mode ?? profile?.mentor_mode) === "direct"
+      ? "direct"
+      : "steady";
   const patternSummary = profile?.pattern_summary ?? null;
   const preferredName = profile?.preferred_name ?? null;
   const slipped = body?.slipped === true;
 
-  // The mentor reads the last five exchanges so it can hold the writer
-  // to their own patterns. This is the product's short-term memory; the
+  // The mentor reads this page's last five exchanges so each page stays
+  // its own conversation. This is the product's short-term memory; the
   // rolling pattern_summary above is the long-term memory.
   const { data: recent } = await supabase
     .from("entries")
     .select("content, responses(content)")
     .eq("user_id", user.id)
+    .eq("meditation_id", meditation.id)
     .order("created_at", { ascending: false })
     .limit(5);
 
@@ -120,7 +181,7 @@ export async function POST(request) {
   // would be a hole in the timeline.
   const { data: saved, error: entryError } = await supabase
     .from("entries")
-    .insert({ user_id: user.id, content: entry })
+    .insert({ user_id: user.id, content: entry, meditation_id: meditation.id })
     .select("id")
     .single();
 
