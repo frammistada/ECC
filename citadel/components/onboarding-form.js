@@ -58,19 +58,19 @@ export default function OnboardingForm() {
   return (
     <form onSubmit={submit}>
       {step === 0 && (
-        <p className="text-lg leading-relaxed">
+        <p className="text-base leading-relaxed">
           A few questions first, so the mentor knows how to speak to you. There
           are no right answers. It takes about a minute.
         </p>
       )}
 
-      <div key={step} className="mt-10 animate-settle">
+      <div key={step} className="mt-7 animate-settle">
         <p className="font-mono text-xs text-ash">{stepLabel(step)}</p>
 
         {question ? (
           <>
-            <p className="mt-3 text-lg leading-relaxed">{question.prompt}</p>
-            <div className="mt-6 flex flex-col gap-3">
+            <p className="mt-2 text-lg leading-relaxed">{question.prompt}</p>
+            <div className="mt-5 flex flex-col gap-2.5">
               {question.options.map((o) => {
                 const selected = answers[question.id] === o.value;
                 return (
@@ -79,7 +79,7 @@ export default function OnboardingForm() {
                     type="button"
                     onClick={() => choose(question.id, o.value)}
                     className={
-                      "rounded-r-xl border-l px-5 py-4 text-left text-lg leading-relaxed transition-colors " +
+                      "rounded-r-xl border-l px-4 py-3 text-left text-base leading-relaxed transition-colors " +
                       (selected
                         ? "border-patina bg-marble text-ink"
                         : "border-ash/30 text-parchment/80 hover:bg-parchment/10")
@@ -114,7 +114,7 @@ export default function OnboardingForm() {
 
         {error && <p className="mt-6 text-sm text-ash">{error}</p>}
 
-        <div className="mt-10 flex items-center gap-7">
+        <div className="mt-7 flex items-center gap-7">
           {onNameStep && (
             <button
               type="submit"

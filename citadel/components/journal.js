@@ -111,7 +111,7 @@ export default function Journal({
 
   return (
     <>
-      <section className="mt-10">
+      <section className="mt-8">
         {checkoutSuccess && !subscribed && (
           <p className="mb-10 font-mono text-xs text-ash">
             subscription received — it may take a moment to register
@@ -119,7 +119,7 @@ export default function Journal({
         )}
 
         {exchanges.length === 0 && !waiting ? (
-          <p className="text-center text-xl leading-relaxed">Nothing written yet today.</p>
+          <p className="text-center text-lg leading-relaxed">Nothing written yet today.</p>
         ) : (
           <ol>
             {exchanges.map((x, i) => (
@@ -206,10 +206,10 @@ export default function Journal({
           {error && <p className="mt-4 text-sm text-ash">{error}</p>}
         </section>
       ) : (
-        <form onSubmit={reflect} className="mt-10 border-t border-parchment/15 pt-8">
+        <form onSubmit={reflect} className="mt-8 border-t border-parchment/15 pt-6">
           <label
             htmlFor="entry"
-            className="block text-center font-mono text-sm tracking-[0.08em] text-ash"
+            className="block text-center font-mono text-xs tracking-[0.08em] text-ash"
           >
             what tested you today
           </label>
@@ -220,7 +220,7 @@ export default function Journal({
             rows={6}
             maxLength={5000}
             disabled={waiting}
-            className="mt-5 w-full resize-y rounded-xl bg-marble p-5 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+            className="mt-4 w-full resize-y rounded-xl bg-marble p-4 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
             placeholder="Where did you slip, or hold firm."
           />
 
@@ -238,11 +238,11 @@ export default function Journal({
           )}
 
           {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-          <div className="mt-6 flex items-center justify-between gap-4">
+          <div className="mt-5 flex items-center justify-between gap-4">
             <button
               type="submit"
               disabled={waiting || !draft.trim()}
-              className="rounded-xl bg-cream px-6 py-3.5 text-lg tracking-wide text-ink disabled:text-ink/50"
+              className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
             >
               Reflect
             </button>
