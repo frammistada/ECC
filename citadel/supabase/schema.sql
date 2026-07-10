@@ -51,6 +51,20 @@ create table public.responses (
   created_at timestamptz not null default now()
 );
 
+-- Open loops (migration 007): intentions/commitments/unresolved tensions
+-- extracted after each reflect (Haiku, 0–2 per entry); the 3 newest
+-- unresolved are injected into the mentor's context. Dismissal is manual
+-- from settings; rows are written server-side only.
+create table public.open_loops (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  entry_id uuid references public.entries (id) on delete set null,
+  description text not null,
+  resolved boolean not null default false,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 -- Behavioral instrumentation (migration 003). One row per reflection;
 -- groundwork for a future adaptive-tone layer. No logic acts on it yet.
 create table public.user_activity_log (
@@ -74,6 +88,9 @@ create index responses_entry_idx on public.responses (entry_id);
 create index profiles_stripe_customer_idx on public.profiles (stripe_customer_id);
 create index user_activity_log_user_created_idx
   on public.user_activity_log (user_id, created_at desc);
+create index open_loops_user_open_idx
+  on public.open_loops (user_id, created_at desc)
+  where not resolved;
 
 -- Entries are private. RLS everywhere; the Stripe webhook uses the
 -- service-role key and is the only thing that writes subscription_status.
@@ -82,6 +99,7 @@ alter table public.meditations enable row level security;
 alter table public.entries enable row level security;
 alter table public.responses enable row level security;
 alter table public.user_activity_log enable row level security;
+alter table public.open_loops enable row level security;
 
 -- auth.uid() wrapped in (select ...) so Postgres evaluates it once per
 -- query instead of once per row — Supabase's own recommendation at scale.
@@ -96,6 +114,15 @@ create policy "update own profile" on public.profiles
 -- Activity log is read-only to the user; rows are written server-side.
 create policy "read own activity" on public.user_activity_log
   for select using ((select auth.uid()) = user_id);
+
+-- Open loops: users read their own and may dismiss (resolve) them.
+-- Inserts happen server-side with the service role.
+create policy "read own loops" on public.open_loops
+  for select using ((select auth.uid()) = user_id);
+
+create policy "resolve own loops" on public.open_loops
+  for update using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 create policy "read own meditations" on public.meditations
   for select using ((select auth.uid()) = user_id);

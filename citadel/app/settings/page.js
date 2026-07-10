@@ -5,6 +5,7 @@ import RingMark from "@/components/ring-mark";
 import { ArrowLeftMark, SignOutMark } from "@/components/icons";
 import { isEmailConfigured } from "@/lib/email";
 import SettingsForm from "@/components/settings-form";
+import OpenLoops from "@/components/open-loops";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,15 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: loops }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("open_loops")
+      .select("id, description, created_at")
+      .eq("user_id", user.id)
+      .eq("resolved", false)
+      .order("created_at", { ascending: false }),
+  ]);
 
   return (
     <main className="mx-auto min-h-screen max-w-[640px] px-6 py-16 sm:py-24">
@@ -55,6 +60,7 @@ export default async function SettingsPage() {
           initialContactEmail={profile?.accountability_email}
           emailConfigured={isEmailConfigured()}
         />
+        <OpenLoops initialLoops={loops ?? []} />
       </section>
     </main>
   );

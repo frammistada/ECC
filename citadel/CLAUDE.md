@@ -34,6 +34,16 @@ came before. This file loads every session; keep it concise and current.
   `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
   sections (To Myself, Reminders, No-Mentor Journaling) stay visible but
   grayed out with a mono "soon" tag — add them here first, then build.
+- **Open loops.** After each reflect, a Haiku call (`lib/loops.js`) extracts
+  0–2 stated intentions/commitments/unresolved tensions (none forced; it
+  sees what's already tracked so it never duplicates). Stored in
+  `open_loops`; the 3 newest unresolved are injected into the mentor's
+  system prompt so it can follow up when the user goes quiet on one — at
+  most one per reply, never mechanically. Resolution is manual v1: a
+  "let it go" dismiss in settings (`/api/loops/[id]`). Injection sits
+  behind `OPEN_LOOPS_REQUIRE_SUBSCRIPTION` in `lib/loops.js` — currently
+  false; flip to true when the payment wall lands (extraction always runs
+  so history exists the day a user subscribes).
 - **Mentor mode.** 7-question scenario onboarding (`lib/onboarding.js`, asked
   one question per screen) scores
   `direct` vs `steady` (steady = safe default). Stored on `profiles.mentor_mode`;
@@ -71,6 +81,7 @@ preferred_name, onboarding_answers, onboarded, accountability_name/email,
 age/aim/about_note) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
 `entries` (user_id, meditation_id, content) · `responses` (entry_id, content) ·
+`open_loops` (user_id, entry_id, description, resolved, resolved_at) ·
 `user_activity_log` (per-entry: mentor_mode, entry_length, goal_status — logging
 only, nothing acts on it yet). Canonical DDL in `supabase/schema.sql`; changes go
 through numbered files in `supabase/migrations/` AND get applied to the live
