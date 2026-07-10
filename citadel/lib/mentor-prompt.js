@@ -76,15 +76,29 @@ Tone for this person:
 // by the user alone, never summarized or revised by the mentor.
 // openLoops: [{ description, created_at }] — unresolved intentions from
 // earlier entries, newest first, at most 3.
+// A micro check-in is one tap and at most a sentence — it gets a nod,
+// not the full Socratic treatment. Showing up small still counts; the
+// reply must not punish the smallness of it.
+const CHECKIN_ADDENDUM = `
+
+Tonight they did not write an entry — they checked in: one word for how
+the day went (held / slipped / neither), maybe one line with it. Reply in
+one or two short sentences. Receive it plainly. A small question is
+allowed when one line invites it, but none is required, and do not press
+for the full story. Checking in instead of writing is not a failure to be
+examined — leave it unexamined tonight.`;
+
 export function buildMentorSystem(
   mentorMode,
   patternSummary,
   preferredName,
   background,
   openLoops,
+  kind = "reflection",
 ) {
   const addendum = MENTOR_MODE_ADDENDA[mentorMode] || MENTOR_MODE_ADDENDA.steady;
   let system = MENTOR_SYSTEM_PROMPT + "\n" + addendum;
+  if (kind === "checkin") system += CHECKIN_ADDENDUM;
 
   const name = (preferredName || "").trim();
   if (name) {

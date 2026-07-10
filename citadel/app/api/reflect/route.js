@@ -12,7 +12,7 @@ import {
 import { composeAccountabilityMessage } from "@/lib/accountability";
 import { isEmailConfigured } from "@/lib/email";
 import { FREE_ENTRY_LIMIT, isSubscribed } from "@/lib/limits";
-import { dateLine } from "@/lib/format";
+import { resolveMeditation } from "@/lib/meditations";
 
 const MAX_ENTRY_CHARS = 5000;
 
@@ -46,12 +46,15 @@ export async function POST(request) {
   // select("*") rather than naming new columns, so this still works if the
   // 002 migration hasn't been applied yet — the fields just come back
   // undefined and the mentor falls back to its default voice.
+  // The paywall counts full reflections only — micro check-ins are free
+  // on every tier and never spend the allowance.
   const [{ data: profile }, { count: entryCount }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
       .from("entries")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id),
+      .eq("user_id", user.id)
+      .eq("entry_type", "reflection"),
   ]);
 
   if ((entryCount ?? 0) >= FREE_ENTRY_LIMIT && !isSubscribed(profile)) {
@@ -68,56 +71,19 @@ export async function POST(request) {
   // Each entry belongs to a meditation (an entry page). A meditationId in
   // the body targets a specific page; otherwise the day's automatic page
   // is found or created on first write.
-  let meditation = null;
-  if (typeof body?.meditationId === "string" && body.meditationId) {
-    const { data: med } = await supabase
-      .from("meditations")
-      .select("*")
-      .eq("id", body.meditationId)
-      .maybeSingle();
-    if (!med) {
+  const meditation = await resolveMeditation(
+    supabase,
+    user.id,
+    body?.meditationId,
+  );
+  if (!meditation) {
+    if (typeof body?.meditationId === "string" && body.meditationId) {
       return Response.json({ error: "That page is gone." }, { status: 404 });
     }
-    meditation = med;
-  } else {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: existing } = await supabase
-      .from("meditations")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("auto_day", today)
-      .maybeSingle();
-    meditation = existing;
-    if (!meditation) {
-      const { data: created, error: medError } = await supabase
-        .from("meditations")
-        .insert({
-          user_id: user.id,
-          name: dateLine(new Date()),
-          auto_day: today,
-        })
-        .select("*")
-        .single();
-      if (medError) {
-        // A concurrent write may have created it — re-read before failing.
-        const { data: raced } = await supabase
-          .from("meditations")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("auto_day", today)
-          .maybeSingle();
-        if (!raced) {
-          console.error("[reflect] meditation create failed", medError);
-          return Response.json(
-            { error: "Something failed. Your words were not lost — try again." },
-            { status: 500 },
-          );
-        }
-        meditation = raced;
-      } else {
-        meditation = created;
-      }
-    }
+    return Response.json(
+      { error: "Something failed. Your words were not lost — try again." },
+      { status: 500 },
+    );
   }
 
   // Page-level mode wins; the profile's mode is the default.

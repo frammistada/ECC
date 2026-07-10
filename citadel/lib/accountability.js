@@ -12,6 +12,19 @@ export function composeAccountabilityMessage(preferredName) {
   );
 }
 
+// The missed-day variant (consequence mechanic): offered when yesterday
+// passed with no entry and no check-in. Same register — plain, first
+// person, no self-flagellation.
+export function composeMissedDayMessage(preferredName) {
+  const name = (preferredName || "").trim();
+  const signoff = name ? `\n\n— ${name}` : "";
+  return (
+    "I went quiet yesterday — no entry, no check-in. " +
+    "I'm telling you because I asked to be held to it." +
+    signoff
+  );
+}
+
 export function accountabilitySubject(preferredName) {
   const name = (preferredName || "").trim();
   return name ? `A note from ${name}` : "A note";

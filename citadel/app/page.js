@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { isSubscribed } from "@/lib/limits";
+import { isSubscribed, gateOpen } from "@/lib/limits";
+import { isEmailConfigured } from "@/lib/email";
 import { LocalDate } from "@/components/local-date";
 import Journal from "@/components/journal";
 import RingMark from "@/components/ring-mark";
@@ -55,20 +56,52 @@ export default async function Home({ searchParams }) {
   const params = await searchParams;
 
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: profile }, { count: entryCount }, { data: todayMed }] =
-    await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
-      supabase
-        .from("entries")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id),
-      supabase
-        .from("meditations")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("auto_day", today)
-        .maybeSingle(),
-    ]);
+  // Yesterday's UTC day bounds, for the consequence mechanic's missed-day
+  // check. Fixed UTC cutoff — the app doesn't store a timezone. A micro
+  // check-in counts as showing up: only a fully silent day triggers.
+  const dayStart = new Date(`${today}T00:00:00Z`);
+  const yesterdayStart = new Date(dayStart.getTime() - 86400000);
+  const [
+    { data: profile },
+    { count: entryCount },
+    { data: todayMed },
+    { count: yesterdayCount },
+    { count: priorCount },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    // Paywall allowance counts full reflections only — check-ins are free.
+    supabase
+      .from("entries")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("entry_type", "reflection"),
+    supabase
+      .from("meditations")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("auto_day", today)
+      .maybeSingle(),
+    supabase
+      .from("entries")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", yesterdayStart.toISOString())
+      .lt("created_at", dayStart.toISOString()),
+    supabase
+      .from("entries")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .lt("created_at", yesterdayStart.toISOString()),
+  ]);
+
+  // Offer the missed-day note only to someone with a history (never greet
+  // a new user with "you went quiet"), a contact set, and the gate open.
+  const missedYesterday =
+    (yesterdayCount ?? 0) === 0 &&
+    (priorCount ?? 0) > 0 &&
+    Boolean(profile?.accountability_email) &&
+    isEmailConfigured() &&
+    gateOpen("consequence", profile);
 
   // Today's writing lives on the day's automatic page (created by the
   // first reflect of the day, so it may not exist yet).
@@ -127,6 +160,9 @@ export default async function Home({ searchParams }) {
             subscribed={isSubscribed(profile)}
             checkoutSuccess={params?.checkout === "success"}
             hasAccountabilityContact={Boolean(profile?.accountability_email)}
+            missedYesterday={missedYesterday}
+            contactName={profile?.accountability_name || null}
+            preferredName={profile?.preferred_name || null}
           />
         </div>
       </div>

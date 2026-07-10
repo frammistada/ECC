@@ -40,6 +40,29 @@ came before. This file loads every session; keep it concise and current.
   plain-text download (`lib/export.js` builds the text). User-written
   content only — no pattern_summary, no open_loops, no instrumentation.
   Free on every tier, no rate limit, by design.
+- **Micro check-ins (free — never gate, never count against the paywall).**
+  One tap (held/slipped/neither) + optional line (≤140 chars) via
+  `/api/checkin`, stored as `entries.entry_type = 'checkin'` with
+  `checkin_state`. Same short-term memory + pattern summary as a full
+  entry, but the reply is short and light (`kind: 'checkin'` addendum in
+  `lib/mentor-prompt.js` — no full Socratic treatment) and no open-loop
+  extraction runs. Reachable even when the reflection paywall is up. All
+  paywall/milestone counts filter `entry_type = 'reflection'`.
+- **Consequence mechanic (premium-flagged).** Two triggers beyond the
+  original slip toggle: a `slipped` check-in offers the same draft
+  (deliberate — same signal), and a fully silent yesterday (no entry, no
+  check-in; fixed UTC day, no timezone stored) shows a missed-day draft
+  banner on the entry screen — only for users with history, a contact set,
+  and email configured. Draft-and-tap always; "let it pass" dismisses per
+  UTC day (localStorage). Messages composed server-side only
+  (`composeMissedDayMessage`); `kind: 'missed'` on
+  `/api/accountability/send`. Gated by `GATES.consequence` in
+  `lib/limits.js` (false until the payment wall lands).
+- **Milestones (premium-flagged).** `/milestones` (drawer): at 30
+  reflections, then 90, then every 90, the first entry+response is shown
+  beside the latest. Entry-count based, not day based — gaps shouldn't
+  push it away. Revisitable page, no popup. Gated by `GATES.milestones`
+  (false until the payment wall lands).
 - **Open loops.** After each reflect, a Haiku call (`lib/loops.js`) extracts
   0–2 stated intentions/commitments/unresolved tensions (none forced; it
   sees what's already tracked so it never duplicates). Stored in
@@ -86,7 +109,8 @@ came before. This file loads every session; keep it concise and current.
 preferred_name, onboarding_answers, onboarded, accountability_name/email,
 age/aim/about_note) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
-`entries` (user_id, meditation_id, content) · `responses` (entry_id, content) ·
+`entries` (user_id, meditation_id, content, entry_type
+'reflection'|'checkin', checkin_state) · `responses` (entry_id, content) ·
 `open_loops` (user_id, entry_id, description, resolved, resolved_at) ·
 `user_activity_log` (per-entry: mentor_mode, entry_length, goal_status — logging
 only, nothing acts on it yet). Canonical DDL in `supabase/schema.sql`; changes go
@@ -127,8 +151,8 @@ project (id `ktztzjajwhlgqsbrcftk`).
   itself, which uses text labels because sections need names.
 - **No scrolling on primary screens**: splash, sign-in, onboarding, entry
   pages, and meditations never page-scroll. Entry pages scroll only their
-  exchange region; meditations scrolls only its list. Settings and
-  Who am I are the only pages that scroll.
+  exchange region; meditations scrolls only its list. Settings, Who am I,
+  and Milestones are the only pages that scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin

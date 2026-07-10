@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FREE_ENTRY_LIMIT } from "@/lib/limits";
+import { composeMissedDayMessage } from "@/lib/accountability";
 import { LocalStamp } from "@/components/local-date";
+
+// Check-in states, in the entry placeholder's own words ("Where did you
+// slip, or hold firm.").
+const CHECKIN_STATES = ["held", "slipped", "neither"];
 
 export default function Journal({
   initialExchanges,
@@ -11,6 +16,9 @@ export default function Journal({
   checkoutSuccess,
   hasAccountabilityContact,
   meditationId = null,
+  missedYesterday = false,
+  contactName = null,
+  preferredName = null,
 }) {
   const [draft, setDraft] = useState("");
   const [slipped, setSlipped] = useState(false);
@@ -27,6 +35,88 @@ export default function Journal({
   const [note, setNote] = useState(null); // { toName, message }
   const [sending, setSending] = useState(false);
   const [noteState, setNoteState] = useState(null); // 'sent' | 'error' | null
+
+  // Micro check-in: the low-effort alternative to a full entry.
+  const [checkinOpen, setCheckinOpen] = useState(false);
+  const [checkinState, setCheckinState] = useState(null);
+  const [checkinNote, setCheckinNote] = useState("");
+
+  // Missed-day note (consequence mechanic). Dismissal is remembered per
+  // UTC day in localStorage, so "let it pass" holds for the whole day.
+  const missedKey = `citadel-missed-${new Date().toISOString().slice(0, 10)}`;
+  const [missedVisible, setMissedVisible] = useState(false);
+  const [missedState, setMissedState] = useState(null); // 'sent'|'error'|null
+  useEffect(() => {
+    if (missedYesterday && !window.localStorage.getItem(missedKey)) {
+      setMissedVisible(true);
+    }
+  }, [missedYesterday, missedKey]);
+
+  function dismissMissed() {
+    window.localStorage.setItem(missedKey, "1");
+    setMissedVisible(false);
+  }
+
+  async function sendMissed() {
+    if (sending) return;
+    setSending(true);
+    setMissedState(null);
+    try {
+      const res = await fetch("/api/accountability/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "missed" }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setMissedState("error");
+        return;
+      }
+      setMissedState("sent");
+      window.localStorage.setItem(missedKey, "1");
+      setMissedVisible(false);
+    } catch {
+      setMissedState("error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function checkIn() {
+    if (waiting || !checkinState) return;
+    setWaiting(true);
+    setError(null);
+    setNote(null);
+    setNoteState(null);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state: checkinState,
+          note: checkinNote.trim(),
+          meditationId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Something failed. Try again.");
+        return;
+      }
+      setExchanges((prev) => [
+        ...prev,
+        { entry: data.content, response: data.response, at: new Date().toISOString() },
+      ]);
+      setCheckinOpen(false);
+      setCheckinState(null);
+      setCheckinNote("");
+      if (data.draft) setNote(data.draft);
+    } catch {
+      setError("The mentor could not be reached.");
+    } finally {
+      setWaiting(false);
+    }
+  }
 
   async function reflect(event) {
     event.preventDefault();
@@ -116,6 +206,41 @@ export default function Journal({
           note). Header and entry form stay fixed so the mentor's answer
           can be reread without scrolling the page. */}
       <div className="min-h-0 overflow-y-auto">
+      {missedVisible && (
+        <section className="mt-6 animate-settle rounded-2xl bg-marble p-6 text-ink">
+          <p className="font-mono text-xs text-ink/60">
+            yesterday passed with nothing written
+          </p>
+          <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed text-ink/90">
+            {composeMissedDayMessage(preferredName)}
+          </p>
+          <div className="mt-6 flex items-baseline gap-6">
+            <button
+              type="button"
+              onClick={sendMissed}
+              disabled={sending}
+              className="font-mono text-sm tracking-wide text-patina underline decoration-1 underline-offset-4 disabled:opacity-50"
+            >
+              Send it to {contactName || "your contact"}
+            </button>
+            <button
+              type="button"
+              onClick={dismissMissed}
+              className="font-mono text-xs text-ink/60 underline decoration-1 underline-offset-4"
+            >
+              let it pass
+            </button>
+            {missedState === "error" && (
+              <span className="font-mono text-xs text-ink/60">
+                couldn&apos;t send — try again
+              </span>
+            )}
+          </div>
+        </section>
+      )}
+      {missedState === "sent" && !missedVisible && (
+        <p className="mt-6 font-mono text-xs text-ash">sent</p>
+      )}
       <section className="mt-8">
         {checkoutSuccess && !subscribed && (
           <p className="mb-10 font-mono text-xs text-ash">
@@ -260,6 +385,78 @@ export default function Journal({
             )}
           </div>
         </form>
+      )}
+
+      {/* Micro check-in: the low-effort door. Deliberately reachable even
+          when the reflection paywall is up — a bad day never costs the
+          habit, on any tier. */}
+      {!checkinOpen ? (
+        <button
+          type="button"
+          onClick={() => {
+            setCheckinOpen(true);
+            setError(null);
+          }}
+          disabled={waiting}
+          className="mx-auto mt-4 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+        >
+          no entry in you today? just check in
+        </button>
+      ) : (
+        <div className="mt-4 animate-settle border-t border-parchment/15 pt-5">
+          <p className="text-center font-mono text-xs tracking-[0.08em] text-ash">
+            how did the day go
+          </p>
+          <div className="mt-3 flex justify-center gap-2">
+            {CHECKIN_STATES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={waiting}
+                onClick={() => setCheckinState(s)}
+                className={
+                  "rounded-xl px-5 py-2.5 text-base transition-colors " +
+                  (checkinState === s
+                    ? "bg-marble text-ink"
+                    : "border border-parchment/20 text-parchment/80 hover:bg-parchment/10")
+                }
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={checkinNote}
+            onChange={(e) => setCheckinNote(e.target.value)}
+            maxLength={140}
+            disabled={waiting}
+            placeholder="one line, if you want"
+            className="mt-3 w-full rounded-xl bg-marble p-3 text-base text-ink outline-none placeholder:text-ink/60 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+          />
+          <div className="mt-4 flex items-center justify-center gap-6">
+            <button
+              type="button"
+              onClick={checkIn}
+              disabled={waiting || !checkinState}
+              className="rounded-xl bg-cream px-6 py-2.5 text-base tracking-wide text-ink disabled:text-ink/50"
+            >
+              Check in
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCheckinOpen(false);
+                setCheckinState(null);
+                setCheckinNote("");
+              }}
+              disabled={waiting}
+              className="font-mono text-xs text-ash underline decoration-1 underline-offset-4"
+            >
+              not now
+            </button>
+          </div>
+        </div>
       )}
     </>
   );
