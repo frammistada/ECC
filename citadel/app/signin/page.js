@@ -9,7 +9,7 @@ export default async function SigninPage({ searchParams }) {
 
   return (
     <main className="min-h-dvh px-3 py-3">
-      <div className="mx-auto flex min-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col rounded-[28px] border border-parchment/10 px-6 pb-6 pt-7 sm:px-10">
+      <div className="mx-auto flex min-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col justify-center rounded-[28px] border border-parchment/10 px-6 pb-6 pt-7 sm:px-10">
         <header className="text-center">
           <Link href="/" className="inline-block">
             <RingMark className="mx-auto h-16 w-16 text-parchment/60" />

@@ -237,7 +237,7 @@ export default function SigninForm() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-col">
       <button
         type="button"
         onClick={() => withProvider("google")}
@@ -266,7 +266,7 @@ export default function SigninForm() {
         <span className="h-px flex-1 bg-parchment/15" />
       </div>
 
-      <form onSubmit={signInWithPassword} className="mt-5 flex flex-1 flex-col">
+      <form onSubmit={signInWithPassword} className="mt-5 flex flex-col">
         <label
           htmlFor="email"
           className="flex items-center gap-3 rounded-2xl border border-parchment/15 px-5 py-3.5 focus-within:border-parchment/35"
@@ -340,7 +340,7 @@ export default function SigninForm() {
           type="button"
           onClick={sendCode}
           disabled={busy}
-          className="mx-auto mt-auto pt-4 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+          className="mx-auto mt-6 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
         >
           Forgot password?
         </button>

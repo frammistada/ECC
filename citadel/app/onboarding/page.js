@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
   if (profile?.onboarded) redirect("/");
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[640px] px-6 pb-6 pt-6">
+    <main className="mx-auto flex min-h-dvh max-w-[640px] flex-col px-6 pb-6 pt-6">
       <header>
         <div className="flex items-center gap-3">
           <RingMark className="h-10 w-10 shrink-0 text-parchment/60" />
@@ -33,7 +33,7 @@ export default async function OnboardingPage() {
         </div>
         <p className="mt-3 font-mono text-xs text-ash">before you begin</p>
       </header>
-      <section className="mt-6">
+      <section className="flex flex-1 flex-col justify-center py-3">
         <OnboardingForm />
       </section>
     </main>

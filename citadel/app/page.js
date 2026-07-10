@@ -95,6 +95,7 @@ export default async function Home({ searchParams }) {
             <GearMark className="h-6 w-6" />
           </Link>
         </nav>
+        <div className="flex flex-1 flex-col justify-center">
         <header className="mt-4 text-center">
           <RingMark className="mx-auto h-14 w-14 text-parchment/60" />
           <h1 className="mt-4 font-display text-4xl font-light tracking-[0.14em] text-parchment">
@@ -104,13 +105,14 @@ export default async function Home({ searchParams }) {
             <LocalDate />
           </p>
         </header>
-        <Journal
-          initialExchanges={exchanges}
-          initialCount={entryCount ?? 0}
-          subscribed={isSubscribed(profile)}
-          checkoutSuccess={params?.checkout === "success"}
-          hasAccountabilityContact={Boolean(profile?.accountability_email)}
-        />
+          <Journal
+            initialExchanges={exchanges}
+            initialCount={entryCount ?? 0}
+            subscribed={isSubscribed(profile)}
+            checkoutSuccess={params?.checkout === "success"}
+            hasAccountabilityContact={Boolean(profile?.accountability_email)}
+          />
+        </div>
       </div>
     </main>
   );
