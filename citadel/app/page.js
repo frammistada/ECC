@@ -187,7 +187,7 @@ export default async function Home({ searchParams }) {
     <main className="min-h-dvh px-3 py-3">
       <div className="mx-auto flex h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col overflow-hidden rounded-[28px] border border-parchment/10 px-5 pb-7 pt-6 sm:px-9">
         <nav className="flex items-center justify-between text-parchment/80">
-          <NavMenu />
+          <NavMenu subscribed={isSubscribed(profile)} />
           <div className="flex items-center gap-6">
             <Link
               href="/meditations"

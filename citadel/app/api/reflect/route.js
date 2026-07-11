@@ -68,22 +68,35 @@ export async function POST(request) {
     );
   }
 
-  // Each entry belongs to a meditation (an entry page). A meditationId in
-  // the body targets a specific page; otherwise the day's automatic page
-  // is found or created on first write.
-  const meditation = await resolveMeditation(
-    supabase,
-    user.id,
-    body?.meditationId,
-  );
-  if (!meditation) {
-    if (typeof body?.meditationId === "string" && body.meditationId) {
-      return Response.json({ error: "That page is gone." }, { status: 404 });
-    }
+  // No-mentor journaling: the entry is saved like any other, but no
+  // mentor call is made and no response exists. Paid only — the client
+  // never shows the toggle to free users, so this is belt-and-braces.
+  const noMentor = body?.noMentor === true;
+  if (noMentor && !isSubscribed(profile)) {
     return Response.json(
-      { error: "Something failed. Your words were not lost — try again." },
-      { status: 500 },
+      { error: "Journaling without the mentor requires a subscription." },
+      { status: 403 },
     );
+  }
+
+  // A mentor entry belongs to a meditation (an entry page): a meditationId
+  // targets a specific page, otherwise the day's automatic page is found or
+  // created. No-mentor journal entries deliberately belong to no meditation
+  // — the /journal room is one continuous log, kept off the mentor's today
+  // screen and out of the meditations list so it can never be reopened with
+  // the mentor.
+  let meditation = null;
+  if (!noMentor) {
+    meditation = await resolveMeditation(supabase, user.id, body?.meditationId);
+    if (!meditation) {
+      if (typeof body?.meditationId === "string" && body.meditationId) {
+        return Response.json({ error: "That page is gone." }, { status: 404 });
+      }
+      return Response.json(
+        { error: "Something failed. Your words were not lost — try again." },
+        { status: 500 },
+      );
+    }
   }
 
   // Page-level mode wins; the profile's mode is the default.
@@ -111,75 +124,86 @@ export async function POST(request) {
 
   // The mentor reads this page's last five exchanges so each page stays
   // its own conversation. This is the product's short-term memory; the
-  // rolling pattern_summary above is the long-term memory.
-  const [{ data: recent }, { data: openLoops }] = await Promise.all([
-    supabase
-      .from("entries")
-      .select("content, responses(content)")
-      .eq("user_id", user.id)
-      .eq("meditation_id", meditation.id)
-      .order("created_at", { ascending: false })
-      .limit(5),
-    loopsInContext
-      ? supabase
-          .from("open_loops")
-          .select("description, created_at")
+  // rolling pattern_summary above is the long-term memory. A no-mentor
+  // entry needs neither — nothing will be asked.
+  const [{ data: recent }, { data: openLoops }] = noMentor
+    ? [{ data: null }, { data: null }]
+    : await Promise.all([
+        supabase
+          .from("entries")
+          .select("content, responses(content)")
           .eq("user_id", user.id)
-          .eq("resolved", false)
+          .eq("meditation_id", meditation.id)
           .order("created_at", { ascending: false })
-          .limit(OPEN_LOOPS_IN_CONTEXT)
-      : Promise.resolve({ data: null }),
-  ]);
+          .limit(5),
+        loopsInContext
+          ? supabase
+              .from("open_loops")
+              .select("description, created_at")
+              .eq("user_id", user.id)
+              .eq("resolved", false)
+              .order("created_at", { ascending: false })
+              .limit(OPEN_LOOPS_IN_CONTEXT)
+          : Promise.resolve({ data: null }),
+      ]);
 
   const history = (recent ?? [])
     .filter((e) => e.responses?.[0]?.content)
     .map((e) => ({ entry: e.content, response: e.responses[0].content }))
     .reverse();
 
-  let mentorText;
-  try {
-    mentorText = await getMentorResponse(
-      entry,
-      history,
-      mentorMode,
-      patternSummary,
-      preferredName,
-      background,
-      openLoops ?? null,
-    );
-  } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) {
-      console.error("[reflect] missing or invalid ANTHROPIC_API_KEY");
+  let mentorText = null;
+  if (!noMentor) {
+    try {
+      mentorText = await getMentorResponse(
+        entry,
+        history,
+        mentorMode,
+        patternSummary,
+        preferredName,
+        background,
+        openLoops ?? null,
+      );
+    } catch (err) {
+      if (err instanceof Anthropic.AuthenticationError) {
+        console.error("[reflect] missing or invalid ANTHROPIC_API_KEY");
+        return Response.json(
+          { error: "The mentor is not configured. Set ANTHROPIC_API_KEY." },
+          { status: 503 },
+        );
+      }
+      if (err instanceof Anthropic.RateLimitError) {
+        return Response.json(
+          { error: "The mentor is occupied. Wait a moment and try again." },
+          { status: 429 },
+        );
+      }
+      console.error("[reflect] api error", err);
       return Response.json(
-        { error: "The mentor is not configured. Set ANTHROPIC_API_KEY." },
-        { status: 503 },
+        { error: "Something failed. Your words were not lost — try again." },
+        { status: 502 },
       );
     }
-    if (err instanceof Anthropic.RateLimitError) {
-      return Response.json(
-        { error: "The mentor is occupied. Wait a moment and try again." },
-        { status: 429 },
-      );
-    }
-    console.error("[reflect] api error", err);
-    return Response.json(
-      { error: "Something failed. Your words were not lost — try again." },
-      { status: 502 },
-    );
-  }
 
-  if (!mentorText) {
-    return Response.json(
-      { error: "The mentor was silent. Try again." },
-      { status: 502 },
-    );
+    if (!mentorText) {
+      return Response.json(
+        { error: "The mentor was silent. Try again." },
+        { status: 502 },
+      );
+    }
   }
 
   // Save entry and response together — an entry without its response
-  // would be a hole in the timeline.
+  // would be a hole in the timeline. A 'journal' entry is the exception:
+  // there, the absence of a response is the chosen mode, not a hole.
   const { data: saved, error: entryError } = await supabase
     .from("entries")
-    .insert({ user_id: user.id, content: entry, meditation_id: meditation.id })
+    .insert({
+      user_id: user.id,
+      content: entry,
+      meditation_id: noMentor ? null : meditation.id,
+      ...(noMentor ? { entry_type: "journal" } : {}),
+    })
     .select("id")
     .single();
 
@@ -191,12 +215,14 @@ export async function POST(request) {
     );
   }
 
-  const { error: responseError } = await supabase
-    .from("responses")
-    .insert({ entry_id: saved.id, content: mentorText });
+  if (!noMentor) {
+    const { error: responseError } = await supabase
+      .from("responses")
+      .insert({ entry_id: saved.id, content: mentorText });
 
-  if (responseError) {
-    console.error("[reflect] response insert failed", responseError);
+    if (responseError) {
+      console.error("[reflect] response insert failed", responseError);
+    }
   }
 
   // Everything below runs after the response is sent to the user, so it
@@ -207,6 +233,10 @@ export async function POST(request) {
       const admin = createAdminClient();
 
       // Item 1: fold this exchange into the rolling pattern summary.
+      // Runs for no-mentor entries too (mentorText null) — the mentor
+      // should know what was written even when it didn't reply; the
+      // memory is the moat regardless of the mode the entry was written
+      // in.
       const nextSummary = await updatePatternSummary(
         patternSummary,
         entry,
@@ -221,11 +251,12 @@ export async function POST(request) {
 
       // Item 3: behavioral instrumentation. goal_status carries the slip
       // signal from item 4's toggle ('missed' when checked, else null).
+      // mentor_mode 'none' marks a no-mentor entry — no mode replied.
       await admin.from("user_activity_log").insert({
         user_id: user.id,
         entry_id: saved.id,
         goal_status: slipped ? "missed" : null,
-        mentor_mode: mentorMode,
+        mentor_mode: noMentor ? "none" : mentorMode,
         entry_length: entry.length,
       });
 
@@ -269,7 +300,10 @@ export async function POST(request) {
 
   return Response.json({
     response: mentorText,
-    entryCount: (entryCount ?? 0) + 1,
+    noMentor,
+    // The free allowance counts reflections only; a 'journal' entry
+    // (subscriber-only anyway) doesn't spend it.
+    entryCount: noMentor ? (entryCount ?? 0) : (entryCount ?? 0) + 1,
     draft,
   });
 }

@@ -34,16 +34,20 @@ Rules:
   that is already on that list, even reworded.
 - Return [] when there is nothing.`;
 
-// entry + response: the new exchange. existing: descriptions of loops
-// already open, so the extractor doesn't duplicate them. Returns an array
-// of 0–2 strings; [] on any failure — extraction is best-effort and must
-// never affect the entry flow.
+// entry + response: the new exchange. response may be null — no-mentor
+// journal entries carry no reply, but a stated intention in one should
+// still be tracked so the mentor can follow up later. existing:
+// descriptions of loops already open, so the extractor doesn't duplicate
+// them. Returns an array of 0–2 strings; [] on any failure — extraction
+// is best-effort and must never affect the entry flow.
 export async function extractOpenLoops(entry, response, existing = []) {
   if (process.env.CITADEL_MOCK_MENTOR === "1") return [];
 
   const tracked = existing.length
     ? existing.map((d) => `- ${d}`).join("\n")
     : "(none)";
+  const reply =
+    (response || "").trim() || "(none — written without the mentor)";
 
   const client = new Anthropic();
   try {
@@ -57,7 +61,7 @@ export async function extractOpenLoops(entry, response, existing = []) {
           content:
             `Already tracked:\n${tracked}\n\n` +
             `Entry:\n${entry}\n\n` +
-            `Mentor's reply:\n${response}`,
+            `Mentor's reply:\n${reply}`,
         },
       ],
     });

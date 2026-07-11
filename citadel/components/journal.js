@@ -26,12 +26,18 @@ export default function Journal({
   preferredName = null,
   panel = null,
   startInChat = false,
+  noMentorRoom = false,
 }) {
   const [view, setView] = useState(
     startInChat && initialExchanges.length > 0 ? "chat" : "compose",
   );
   const [draft, setDraft] = useState("");
   const [slipped, setSlipped] = useState(false);
+  // No-mentor journaling (paid) is its own room (/journal), reached from
+  // the drawer — never a toggle on the mentor's composer, which is always
+  // mentor-on. In that room this whole component runs in no-mentor mode:
+  // every entry is saved without a Claude call and shows no reply.
+  const noMentor = noMentorRoom;
   const [exchanges, setExchanges] = useState(initialExchanges);
   const [entryCount, setEntryCount] = useState(initialCount);
   const [waiting, setWaiting] = useState(false);
@@ -125,7 +131,13 @@ export default function Journal({
     // The moment it's sent, the screen becomes the conversation.
     setExchanges((prev) => [
       ...prev,
-      { entry, response: "", at: new Date().toISOString(), pending: true },
+      {
+        entry,
+        response: "",
+        at: new Date().toISOString(),
+        pending: true,
+        noMentor,
+      },
     ]);
     setView("chat");
     setDraft("");
@@ -134,7 +146,7 @@ export default function Journal({
       const res = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entry, slipped, meditationId }),
+        body: JSON.stringify({ entry, slipped, meditationId, noMentor }),
       });
       const data = await res.json();
 
@@ -145,7 +157,9 @@ export default function Journal({
 
       setExchanges((prev) =>
         prev.map((x) =>
-          x.pending ? { ...x, response: data.response, pending: false } : x,
+          x.pending
+            ? { ...x, response: data.response ?? "", pending: false }
+            : x,
         ),
       );
       setEntryCount(data.entryCount);
@@ -313,6 +327,7 @@ export default function Journal({
                 <div className="flex flex-col items-end">
                   <p className="font-mono text-[10px] text-ash">
                     <LocalStamp iso={x.at} />
+                    {x.noMentor ? " · no mentor" : ""}
                   </p>
                   <div className="mt-1.5 max-w-[85%] rounded-2xl rounded-br-sm bg-marble px-4 py-3">
                     <p className="whitespace-pre-wrap text-base leading-relaxed text-ink">
@@ -326,7 +341,7 @@ export default function Journal({
                   </blockquote>
                 ) : x.pending ? (
                   <p className="font-mono text-xs text-ash">
-                    the mentor is reading
+                    {x.noMentor ? "saving" : "the mentor is reading"}
                   </p>
                 ) : null}
               </li>
@@ -349,16 +364,20 @@ export default function Journal({
                 rows={2}
                 maxLength={5000}
                 disabled={waiting}
-                aria-label="what tested you today"
+                aria-label={noMentorRoom ? "your journal" : "what tested you today"}
                 className="min-w-0 flex-1 resize-none rounded-xl bg-marble p-3 text-base leading-relaxed text-ink outline-none placeholder:text-ink/60 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-                placeholder="Where did you slip, or hold firm."
+                placeholder={
+                  noMentorRoom
+                    ? "Whatever you want to set down."
+                    : "Where did you slip, or hold firm."
+                }
               />
               <button
                 type="submit"
                 disabled={waiting || !draft.trim()}
                 className="shrink-0 rounded-xl bg-cream px-5 py-3 text-base tracking-wide text-ink disabled:text-ink/50"
               >
-                Reflect
+                {noMentor ? "Save" : "Reflect"}
               </button>
             </div>
             <div className="mt-3 flex items-center justify-between gap-4">
@@ -436,7 +455,9 @@ export default function Journal({
           (panel ??
             (exchanges.length === 0 && (
               <p className="text-center text-lg leading-relaxed">
-                Nothing written here yet.
+                {noMentorRoom
+                  ? "Your journal. Write freely — nothing here answers back."
+                  : "Nothing written here yet."}
               </p>
             ))) || null
         )}
@@ -451,9 +472,11 @@ export default function Journal({
               onClick={() => setView("chat")}
               className="font-mono text-xs text-ash underline decoration-1 underline-offset-4"
             >
-              {meditationId
-                ? "read this page's conversation"
-                : "read today's conversation"}
+              {noMentorRoom
+                ? "read your journal"
+                : meditationId
+                  ? "read this page's conversation"
+                  : "read today's conversation"}
             </button>
           </div>
         )}
@@ -532,7 +555,7 @@ export default function Journal({
                 htmlFor="entry"
                 className="block text-center font-mono text-xs tracking-[0.08em] text-ash"
               >
-                what tested you today
+                {noMentorRoom ? "your journal" : "what tested you today"}
               </label>
               <textarea
                 id="entry"
@@ -542,7 +565,11 @@ export default function Journal({
                 maxLength={5000}
                 disabled={waiting}
                 className="mt-3 w-full resize-y rounded-xl bg-marble p-4 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-                placeholder="Where did you slip, or hold firm."
+                placeholder={
+                  noMentorRoom
+                    ? "Whatever you want to set down."
+                    : "Where did you slip, or hold firm."
+                }
               />
 
               {hasAccountabilityContact && (
@@ -565,7 +592,7 @@ export default function Journal({
                   disabled={waiting || !draft.trim()}
                   className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
                 >
-                  Reflect
+                  {noMentor ? "Save" : "Reflect"}
                 </button>
                 {!subscribed && (
                   <p className="whitespace-nowrap text-right font-mono text-[10px] text-ash sm:text-xs">
@@ -575,17 +602,19 @@ export default function Journal({
               </div>
             </form>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setCheckinOpen(true);
-              setError(null);
-            }}
-            disabled={waiting}
-            className="mx-auto mt-3 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
-          >
-            no entry in you today? just check in
-          </button>
+          {!noMentorRoom && (
+            <button
+              type="button"
+              onClick={() => {
+                setCheckinOpen(true);
+                setError(null);
+              }}
+              disabled={waiting}
+              className="mx-auto mt-3 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+            >
+              no entry in you today? just check in
+            </button>
+          )}
         </>
       )}
     </>

@@ -9,15 +9,26 @@ import { MenuMark } from "@/components/icons";
 // list inside uses text labels because sections need names. Unbuilt
 // sections are shown grayed out (not hidden) with a mono "soon" tag, so
 // the shape of the app is visible before every room exists.
-const SECTIONS = [
+// No-Mentor Journaling is its own room (/journal), reached only from here
+// and only by subscribers — free users never see it (absent, not grayed,
+// so the core experience carries no per-visit upsell). It is added to the
+// list below when `subscribed` is true. Sections without an href are
+// unbuilt and shown grayed with a "soon" tag.
+const BASE_SECTIONS = [
   { label: "Who am I", href: "/who-am-i" },
   { label: "To Myself", href: "/to-myself" },
   { label: "Reminders" },
-  { label: "No-Mentor Journaling" },
 ];
 
-export default function NavMenu() {
+export default function NavMenu({ subscribed = false }) {
   const [open, setOpen] = useState(false);
+  const sections = subscribed
+    ? [
+        ...BASE_SECTIONS.slice(0, 2),
+        { label: "No-Mentor Journaling", href: "/journal" },
+        ...BASE_SECTIONS.slice(2),
+      ]
+    : BASE_SECTIONS;
 
   return (
     <>
@@ -44,7 +55,7 @@ export default function NavMenu() {
               citadel
             </p>
             <ul className="mt-5 flex flex-col gap-1.5">
-              {SECTIONS.map((s) => (
+              {sections.map((s) => (
                 <li key={s.label}>
                   {s.href ? (
                     <Link
