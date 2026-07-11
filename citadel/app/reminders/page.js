@@ -9,10 +9,9 @@ import RemindersForm from "@/components/reminders-form";
 export const dynamic = "force-dynamic";
 
 // The Reminders room, reached from the drawer and only by subscribers (a
-// direct visit by a non-subscriber redirects to /). One daily reminder,
-// paid — kept deliberately small: a single time, a single message, no
-// configurable notification system. This is a scrolling settings-style
-// page, not a fixed primary screen.
+// direct visit by a non-subscriber redirects to /). Three paid reminder
+// types — reflection, goal, quote — sharing the same push infrastructure.
+// This is a scrolling settings-style page, not a fixed primary screen.
 export default async function RemindersPage() {
   if (!isSupabaseConfigured()) redirect("/");
 
@@ -50,8 +49,13 @@ export default async function RemindersPage() {
 
       <section className="mt-16">
         <RemindersForm
-          initialEnabled={profile?.reminder_enabled}
-          initialTime={profile?.reminder_time}
+          initialReflectionEnabled={profile?.reminder_enabled}
+          initialReflectionTime={profile?.reminder_time}
+          initialGoalEnabled={profile?.goal_reminder_enabled}
+          initialGoalTime={profile?.goal_reminder_time}
+          initialQuoteEnabled={profile?.quote_reminder_enabled}
+          initialQuoteCount={profile?.quote_reminder_count}
+          hasAim={Boolean((profile?.aim || "").trim())}
           vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""}
         />
       </section>

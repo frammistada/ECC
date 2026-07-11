@@ -22,13 +22,27 @@ create table public.profiles (
   age integer check (age between 5 and 120),
   aim text,
   about_note text,
-  -- Daily reminder (migration 011). reminder_time is wall-clock "HH:MM" in
-  -- reminder_timezone (IANA, or "UTC" fallback). reminder_last_sent guards
-  -- one send per local day. Paid feature; enforced in the API, not here.
+  -- Daily reflection reminder (migration 011). reminder_time is wall-clock
+  -- "HH:MM" in reminder_timezone (IANA, or "UTC" fallback).
+  -- reminder_last_sent guards one send per local day. Paid; enforced in the
+  -- API, not here.
   reminder_enabled boolean not null default false,
   reminder_time text,
   reminder_timezone text,
   reminder_last_sent date,
+  -- Goal reminder (migration 012): one push a day of the user's stated goal
+  -- (profiles.aim). Shares reminder_timezone.
+  goal_reminder_enabled boolean not null default false,
+  goal_reminder_time text,
+  goal_reminder_last_sent date,
+  -- Quote reminder (migration 012): N stoic-toned lines a day (1..6), evenly
+  -- spaced from an 08:00 local base. slots_sent = how many of today's slots
+  -- have fired, so the hourly cron sends at most one per slot.
+  quote_reminder_enabled boolean not null default false,
+  quote_reminder_count integer not null default 1
+    check (quote_reminder_count between 1 and 6),
+  quote_reminder_last_sent date,
+  quote_reminder_slots_sent integer not null default 0,
   created_at timestamptz not null default now()
 );
 

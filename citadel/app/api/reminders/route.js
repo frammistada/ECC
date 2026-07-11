@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSubscribed } from "@/lib/limits";
-import { parseHhmm } from "@/lib/reminders";
+import { parseHhmm, clampQuoteCount } from "@/lib/reminders";
 
-// Save the daily-reminder settings and, when enabling, register this
-// browser's push subscription. Paid only — enabling requires an active
-// subscription (the client hides the room from free users; this is the
-// server guard). Disabling is always allowed.
+// Save all three reminder types in one snapshot and, when any is enabled,
+// register this browser's push subscription. The client always posts the
+// full desired state:
+//   { timezone, subscription, reflection:{enabled,time}, goal:{enabled,time},
+//     quote:{enabled,count} }
+// Paid only — enabling anything requires an active subscription (the client
+// hides the room from free users; this is the server guard). Disabling is
+// always allowed.
 export async function POST(request) {
   const supabase = await createClient();
   const {
@@ -22,7 +26,13 @@ export async function POST(request) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const enabled = body?.enabled === true;
+  const reflection = body?.reflection || {};
+  const goal = body?.goal || {};
+  const quote = body?.quote || {};
+  const reflectionOn = reflection.enabled === true;
+  const goalOn = goal.enabled === true;
+  const quoteOn = quote.enabled === true;
+  const anyOn = reflectionOn || goalOn || quoteOn;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -30,31 +40,54 @@ export async function POST(request) {
     .eq("id", user.id)
     .single();
 
-  if (enabled && !isSubscribed(profile)) {
+  if (anyOn && !isSubscribed(profile)) {
     return Response.json(
-      { error: "Daily reminders require a subscription." },
+      { error: "Reminders require a subscription." },
       { status: 403 },
     );
   }
 
-  const update = { reminder_enabled: enabled };
+  const update = {
+    reminder_enabled: reflectionOn,
+    goal_reminder_enabled: goalOn,
+    quote_reminder_enabled: quoteOn,
+  };
 
-  if (enabled) {
-    const minutes = parseHhmm(body?.time);
-    if (minutes === null) {
+  // Validate + set each enabled type, resetting its one-per-day guard so a
+  // same-day enable/change can still fire today. Disabled types keep their
+  // stored time/count so re-enabling remembers the last choice.
+  if (reflectionOn) {
+    if (parseHhmm(reflection.time) === null) {
       return Response.json(
-        { error: "That time doesn't look right." },
+        { error: "That reflection time doesn't look right." },
         { status: 400 },
       );
     }
-    update.reminder_time = body.time;
+    update.reminder_time = reflection.time;
+    update.reminder_last_sent = null;
+  }
+  if (goalOn) {
+    if (parseHhmm(goal.time) === null) {
+      return Response.json(
+        { error: "That goal-reminder time doesn't look right." },
+        { status: 400 },
+      );
+    }
+    update.goal_reminder_time = goal.time;
+    update.goal_reminder_last_sent = null;
+  }
+  if (quoteOn) {
+    update.quote_reminder_count = clampQuoteCount(quote.count);
+    update.quote_reminder_last_sent = null;
+    update.quote_reminder_slots_sent = 0;
+  }
+
+  if (anyOn) {
     // IANA zone from the browser; "UTC" fallback keeps a reminder firing.
     update.reminder_timezone =
       typeof body?.timezone === "string" && body.timezone.trim()
         ? body.timezone.trim().slice(0, 64)
         : "UTC";
-    // Clear the guard so a same-day enable can still fire tonight.
-    update.reminder_last_sent = null;
 
     // Store this device's push subscription. Upsert on the unique endpoint
     // so re-enabling on the same device doesn't duplicate rows.
@@ -104,5 +137,10 @@ export async function POST(request) {
     );
   }
 
-  return Response.json({ ok: true, enabled });
+  return Response.json({
+    ok: true,
+    reflection: reflectionOn,
+    goal: goalOn,
+    quote: quoteOn,
+  });
 }

@@ -28,8 +28,10 @@ self.addEventListener("push", (event) => {
     body: data.body || "Something tested you today.",
     icon: "/icons/icon-192.png",
     badge: "/icons/badge-96.png",
-    // A tag + renotify collapses repeats into one line rather than stacking.
-    tag: "citadel-daily-reminder",
+    // A tag + renotify collapses repeats of the SAME kind into one line
+    // rather than stacking. Each reminder type sends its own tag, so a
+    // reflection, goal, and quote reminder can coexist.
+    tag: data.tag || "citadel-reminder",
     renotify: true,
     data: { url: data.url || "/" },
   };
