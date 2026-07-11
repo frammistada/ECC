@@ -169,8 +169,9 @@ project (id `ktztzjajwhlgqsbrcftk`).
   itself, which uses text labels because sections need names.
 - **No scrolling on primary screens**: splash, sign-in, onboarding, entry
   pages, and meditations never page-scroll. Entry pages scroll only their
-  exchange region; meditations scrolls only its list. Settings, Who am I,
-  and Milestones are the only pages that scroll.
+  exchange region; meditations scrolls only its list; milestones scrolls
+  only its first/latest spread. Settings and Who am I are the only pages
+  that scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin
