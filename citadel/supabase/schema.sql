@@ -70,6 +70,20 @@ create table public.open_loops (
   created_at timestamptz not null default now()
 );
 
+-- Weekly insights (migration 009): "To Myself" — one user-facing note
+-- per user per calendar week (Monday-start, UTC), never overwritten.
+-- Distinct from profiles.pattern_summary (the mentor's rolling memory).
+create table public.weekly_insights (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  week_start date not null,
+  content text not null,
+  entry_count integer not null default 0,
+  checkin_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  unique (user_id, week_start)
+);
+
 -- Behavioral instrumentation (migration 003). One row per reflection;
 -- groundwork for a future adaptive-tone layer. No logic acts on it yet.
 create table public.user_activity_log (
@@ -96,6 +110,8 @@ create index user_activity_log_user_created_idx
 create index open_loops_user_open_idx
   on public.open_loops (user_id, created_at desc)
   where not resolved;
+create index weekly_insights_user_week_idx
+  on public.weekly_insights (user_id, week_start desc);
 
 -- Entries are private. RLS everywhere; the Stripe webhook uses the
 -- service-role key and is the only thing that writes subscription_status.
@@ -105,6 +121,7 @@ alter table public.entries enable row level security;
 alter table public.responses enable row level security;
 alter table public.user_activity_log enable row level security;
 alter table public.open_loops enable row level security;
+alter table public.weekly_insights enable row level security;
 
 -- auth.uid() wrapped in (select ...) so Postgres evaluates it once per
 -- query instead of once per row — Supabase's own recommendation at scale.
@@ -128,6 +145,10 @@ create policy "read own loops" on public.open_loops
 create policy "resolve own loops" on public.open_loops
   for update using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+-- Weekly insights: read-only to the user; written server-side.
+create policy "read own insights" on public.weekly_insights
+  for select using ((select auth.uid()) = user_id);
 
 create policy "read own meditations" on public.meditations
   for select using ((select auth.uid()) = user_id);
