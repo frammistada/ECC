@@ -42,9 +42,10 @@ create table public.entries (
   content text not null,
   meditation_id uuid references public.meditations (id) on delete cascade,
   -- Micro check-ins (migration 008): a lighter entry type. checkin_state
-  -- is set only when entry_type = 'checkin'.
+  -- is set only when entry_type = 'checkin'. 'journal' (migration 010) is
+  -- a paid no-mentor entry: saved like a reflection, no response row.
   entry_type text not null default 'reflection'
-    check (entry_type in ('reflection', 'checkin')),
+    check (entry_type in ('reflection', 'checkin', 'journal')),
   checkin_state text check (checkin_state in ('held', 'slipped', 'neither')),
   created_at timestamptz not null default now()
 );

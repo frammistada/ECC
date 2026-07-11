@@ -9,11 +9,13 @@ import { MenuMark } from "@/components/icons";
 // list inside uses text labels because sections need names. Unbuilt
 // sections are shown grayed out (not hidden) with a mono "soon" tag, so
 // the shape of the app is visible before every room exists.
+// No-Mentor Journaling used to sit here as an unbuilt section; it shipped
+// as a mode on the entry screen (the "Journal without the mentor" toggle,
+// subscribers only), not as its own room, so it left the list.
 const SECTIONS = [
   { label: "Who am I", href: "/who-am-i" },
   { label: "To Myself", href: "/to-myself" },
   { label: "Reminders" },
-  { label: "No-Mentor Journaling" },
 ];
 
 export default function NavMenu() {

@@ -32,6 +32,10 @@ export default function Journal({
   );
   const [draft, setDraft] = useState("");
   const [slipped, setSlipped] = useState(false);
+  // No-mentor journaling (paid): write without a reply. Defaults to
+  // mentor-on on every page load — the mentor is the product; this mode
+  // is opted into per sitting, never remembered across visits.
+  const [noMentor, setNoMentor] = useState(false);
   const [exchanges, setExchanges] = useState(initialExchanges);
   const [entryCount, setEntryCount] = useState(initialCount);
   const [waiting, setWaiting] = useState(false);
@@ -125,7 +129,13 @@ export default function Journal({
     // The moment it's sent, the screen becomes the conversation.
     setExchanges((prev) => [
       ...prev,
-      { entry, response: "", at: new Date().toISOString(), pending: true },
+      {
+        entry,
+        response: "",
+        at: new Date().toISOString(),
+        pending: true,
+        noMentor,
+      },
     ]);
     setView("chat");
     setDraft("");
@@ -134,7 +144,7 @@ export default function Journal({
       const res = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entry, slipped, meditationId }),
+        body: JSON.stringify({ entry, slipped, meditationId, noMentor }),
       });
       const data = await res.json();
 
@@ -145,7 +155,9 @@ export default function Journal({
 
       setExchanges((prev) =>
         prev.map((x) =>
-          x.pending ? { ...x, response: data.response, pending: false } : x,
+          x.pending
+            ? { ...x, response: data.response ?? "", pending: false }
+            : x,
         ),
       );
       setEntryCount(data.entryCount);
@@ -313,6 +325,7 @@ export default function Journal({
                 <div className="flex flex-col items-end">
                   <p className="font-mono text-[10px] text-ash">
                     <LocalStamp iso={x.at} />
+                    {x.noMentor ? " · no mentor" : ""}
                   </p>
                   <div className="mt-1.5 max-w-[85%] rounded-2xl rounded-br-sm bg-marble px-4 py-3">
                     <p className="whitespace-pre-wrap text-base leading-relaxed text-ink">
@@ -326,7 +339,7 @@ export default function Journal({
                   </blockquote>
                 ) : x.pending ? (
                   <p className="font-mono text-xs text-ash">
-                    the mentor is reading
+                    {x.noMentor ? "saving" : "the mentor is reading"}
                   </p>
                 ) : null}
               </li>
@@ -358,24 +371,36 @@ export default function Journal({
                 disabled={waiting || !draft.trim()}
                 className="shrink-0 rounded-xl bg-cream px-5 py-3 text-base tracking-wide text-ink disabled:text-ink/50"
               >
-                Reflect
+                {noMentor ? "Save" : "Reflect"}
               </button>
             </div>
             <div className="mt-3 flex items-center justify-between gap-4">
-              {hasAccountabilityContact ? (
-                <label className="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-ash">
-                  <input
-                    type="checkbox"
-                    checked={slipped}
-                    onChange={(e) => setSlipped(e.target.checked)}
-                    disabled={waiting}
-                    className="accent-patina"
-                  />
-                  I fell short today
-                </label>
-              ) : (
-                <span />
-              )}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+                {hasAccountabilityContact && (
+                  <label className="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-ash">
+                    <input
+                      type="checkbox"
+                      checked={slipped}
+                      onChange={(e) => setSlipped(e.target.checked)}
+                      disabled={waiting}
+                      className="accent-patina"
+                    />
+                    I fell short today
+                  </label>
+                )}
+                {subscribed && (
+                  <label className="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-ash">
+                    <input
+                      type="checkbox"
+                      checked={noMentor}
+                      onChange={(e) => setNoMentor(e.target.checked)}
+                      disabled={waiting}
+                      className="accent-patina"
+                    />
+                    Journal without the mentor
+                  </label>
+                )}
+              </div>
               {!subscribed && (
                 <p className="whitespace-nowrap font-mono text-[10px] text-ash">
                   {entryCount} of {FREE_ENTRY_LIMIT} free
@@ -558,6 +583,19 @@ export default function Journal({
                 </label>
               )}
 
+              {subscribed && (
+                <label className="mt-4 flex cursor-pointer items-center gap-3 font-mono text-xs text-ash">
+                  <input
+                    type="checkbox"
+                    checked={noMentor}
+                    onChange={(e) => setNoMentor(e.target.checked)}
+                    disabled={waiting}
+                    className="accent-patina"
+                  />
+                  Journal without the mentor — write freely, no reply
+                </label>
+              )}
+
               {error && <p className="mt-3 text-sm text-ash">{error}</p>}
               <div className="mt-4 flex items-center justify-between gap-4">
                 <button
@@ -565,7 +603,7 @@ export default function Journal({
                   disabled={waiting || !draft.trim()}
                   className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
                 >
-                  Reflect
+                  {noMentor ? "Save" : "Reflect"}
                 </button>
                 {!subscribed && (
                   <p className="whitespace-nowrap text-right font-mono text-[10px] text-ash sm:text-xs">

@@ -154,7 +154,7 @@ export default async function Home({ searchParams }) {
   const { data: todays } = todayMed
     ? await supabase
         .from("entries")
-        .select("content, created_at, responses(content)")
+        .select("content, created_at, entry_type, responses(content)")
         .eq("meditation_id", todayMed.id)
         .order("created_at", { ascending: true })
     : { data: [] };
@@ -170,6 +170,7 @@ export default async function Home({ searchParams }) {
     entry: e.content,
     response: e.responses?.[0]?.content ?? "",
     at: e.created_at,
+    noMentor: e.entry_type === "journal",
   }));
 
   const panelCards = buildPanelCards({

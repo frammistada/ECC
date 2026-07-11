@@ -32,8 +32,9 @@ came before. This file loads every session; keep it concise and current.
   behind the subscription. Saves through the same `/api/settings` updater.
 - **Sections drawer.** Hamburger (top-left of the entry screen,
   `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
-  sections (To Myself, Reminders, No-Mentor Journaling) stay visible but
-  grayed out with a mono "soon" tag — add them here first, then build.
+  sections (Reminders) stay visible but grayed out with a mono "soon"
+  tag — add them here first, then build. (No-Mentor Journaling shipped
+  as an entry-screen mode, not a room, so it left the list.)
   Below the sections: "export my data" — a plain anchor to `/api/export`.
   To Myself is live (Milestones moved inside it; /milestones remains as
   the spread's own page, reached from To Myself's milestone rows).
@@ -50,6 +51,22 @@ came before. This file loads every session; keep it concise and current.
   `lib/mentor-prompt.js` — no full Socratic treatment) and no open-loop
   extraction runs. Reachable even when the reflection paywall is up. All
   paywall/milestone counts filter `entry_type = 'reflection'`.
+- **No-mentor journaling (subscribers only — the toggle is absent, not
+  grayed, for free users).** A "Journal without the mentor" checkbox on
+  the entry composer (compose + chat views, `components/journal.js`).
+  Off on every page load — mentor-on is always the default; the mode is
+  opted into per sitting and never persisted. When on, `/api/reflect`
+  saves the entry as `entries.entry_type = 'journal'` with **no Claude
+  call, no responses row** (server re-checks the subscription — 403
+  otherwise). The entry still feeds pattern_summary, open-loop
+  extraction, and the activity log (`mentor_mode: 'none'`) — memory is
+  the moat regardless of mode — but stays out of the mentor's 5-exchange
+  turn history (no reply to alternate with) and out of paywall/milestone
+  counts, which filter `entry_type = 'reflection'`. In history it renders
+  as the bubble alone, stamped `· no mentor` beside the time so chosen
+  silence can't be mistaken for a failed reply. Deliberately secondary to
+  the mentor experience: no first-use interstitial, no upsell for free
+  tiers, plain wording only.
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
   original slip toggle: a `slipped` check-in offers the same draft
   (deliberate — same signal), and a fully silent yesterday (no entry, no
@@ -141,7 +158,8 @@ preferred_name, onboarding_answers, onboarded, accountability_name/email,
 age/aim/about_note) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
 `entries` (user_id, meditation_id, content, entry_type
-'reflection'|'checkin', checkin_state) · `responses` (entry_id, content) ·
+'reflection'|'checkin'|'journal', checkin_state) · `responses` (entry_id,
+content — none for 'journal' entries) ·
 `open_loops` (user_id, entry_id, description, resolved, resolved_at) ·
 `weekly_insights` (user_id, week_start unique-per-user, content,
 entry_count, checkin_count) ·

@@ -4,12 +4,18 @@ import { PATTERN_SUMMARY_SYSTEM } from "@/lib/mentor-prompt";
 // Folds one new exchange into the rolling pattern summary. Cheap model —
 // this is summarization, not the mentor's voice. Returns the new summary
 // text, or null if it couldn't be produced (caller keeps the old one).
+// response may be null: no-mentor journal entries have no reply, but the
+// entry still feeds the note — the mentor knows what was written even in
+// a session where it didn't speak.
 export async function updatePatternSummary(existingSummary, entry, response) {
   if (process.env.CITADEL_MOCK_MENTOR === "1") {
     return existingSummary || null;
   }
 
   const existing = (existingSummary || "").trim() || "(none yet)";
+  const reply =
+    (response || "").trim() ||
+    "(none — they wrote this one without the mentor)";
   const client = new Anthropic();
 
   try {
@@ -23,7 +29,7 @@ export async function updatePatternSummary(existingSummary, entry, response) {
           content:
             `Existing note:\n${existing}\n\n` +
             `Newest entry:\n${entry}\n\n` +
-            `Mentor's reply:\n${response}`,
+            `Mentor's reply:\n${reply}`,
         },
       ],
     });

@@ -162,7 +162,10 @@ export function buildMentorSystem(
 export const PATTERN_SUMMARY_SYSTEM = `You maintain a private, running note
 on one person who journals each evening about what tested them. You are
 given the existing note (which may be empty) and their newest entry with
-the mentor's reply. Return an updated note of 2 to 4 sentences.
+the mentor's reply. Some entries carry no reply — the person chose to
+write without the mentor that time; the entry still informs the note, and
+the absence of a reply is not itself a pattern to record. Return an
+updated note of 2 to 4 sentences.
 
 Rules:
 - Revise and extend the existing note. Keep what still holds, drop what
