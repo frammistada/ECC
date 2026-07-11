@@ -25,16 +25,16 @@ function nextMilestone(count) {
 // One side of the spread: a lifted panel holding an entry and its reply.
 function Facing({ label, entry }) {
   return (
-    <article className="min-w-0 rounded-2xl border border-parchment/10 bg-panel p-6 sm:p-7">
+    <article className="min-w-0 rounded-2xl border border-parchment/10 bg-panel p-6">
       <p className="font-mono text-xs tracking-[0.15em] text-ash">{label}</p>
       <p className="mt-1.5 font-mono text-xs text-ash/70">
         <LocalDay iso={entry.created_at} />
       </p>
-      <p className="mt-5 whitespace-pre-wrap text-lg leading-relaxed">
+      <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed">
         {entry.content}
       </p>
       {entry.responses?.[0]?.content && (
-        <blockquote className="mt-7 border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
+        <blockquote className="mt-6 border-l border-patina pl-4 text-base italic leading-relaxed text-parchment/90">
           {entry.responses[0].content}
         </blockquote>
       )}
@@ -44,7 +44,7 @@ function Facing({ label, entry }) {
 
 // The count writ large, a thin rule filling toward the next look back,
 // and — once a milestone is reached — the first entry set beside the
-// latest as facing pages. Revisitable by design; never a popup.
+// latest. The page never scrolls; only the spread does.
 export default async function MilestonesPage() {
   if (!isSupabaseConfigured()) redirect("/");
 
@@ -97,9 +97,14 @@ export default async function MilestonesPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-[760px] px-6 py-16 sm:py-24">
-      <header className="flex items-baseline justify-between">
-        <div>
+    <main className="min-h-dvh px-3 py-3">
+      <div className="mx-auto flex h-[calc(100dvh-24px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[28px] border border-parchment/10 px-5 pb-6 pt-6 sm:px-8">
+        <nav className="flex items-center justify-end text-parchment/80">
+          <Link href="/" aria-label="back to today" title="back to today">
+            <ArrowLeftMark className="h-6 w-6" />
+          </Link>
+        </nav>
+        <header className="mt-2 shrink-0">
           <div className="flex items-center gap-3">
             <RingMark className="h-10 w-10 shrink-0 text-parchment/60" />
             <h1 className="font-display text-4xl font-normal tracking-[0.08em]">
@@ -107,74 +112,67 @@ export default async function MilestonesPage() {
             </h1>
           </div>
           <p className="mt-3 font-mono text-xs text-ash">milestones</p>
-        </div>
-        <nav className="flex items-center gap-5 text-parchment/80">
-          <Link href="/" aria-label="back to today" title="back to today">
-            <ArrowLeftMark className="h-6 w-6" />
-          </Link>
-        </nav>
-      </header>
+        </header>
 
-      {gated ? (
-        <section className="mt-16">
-          <p className="text-lg leading-relaxed">
-            Milestones are part of the subscription.
-          </p>
-        </section>
-      ) : (
-        <>
-          {/* The count, writ large. */}
-          <section className="mt-16 text-center">
-            <p className="font-display text-8xl font-light leading-none text-parchment">
-              {total}
+        {gated ? (
+          <div className="flex min-h-0 flex-1 items-center">
+            <p className="text-lg leading-relaxed">
+              Milestones are part of the subscription.
             </p>
-            <p className="mt-3 font-mono text-xs tracking-[0.25em] text-ash">
-              {total === 1 ? "reflection" : "reflections"}
-            </p>
-          </section>
-
-          {/* The road to the next look back. */}
-          <section className="mx-auto mt-12 max-w-[440px]">
-            <div className="h-[2px] w-full overflow-hidden rounded-full bg-ash/20">
-              <div
-                className="h-full bg-patina"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between font-mono text-[10px] text-ash">
-              <span>{prev}</span>
-              <span>{next}</span>
-            </div>
-            <p className="mt-5 text-center font-mono text-xs text-ash">
-              {milestone
-                ? `next look back at ${next} — ${next - total} to go`
-                : `your first look back comes at 30 — ${next - total} to go`}
-            </p>
-          </section>
-
-          {milestone ? (
-            <section className="mt-16">
-              <div className="grid gap-6 sm:grid-cols-2">
-                {first && <Facing label="where you began" entry={first} />}
-                {latest && total > 1 && (
-                  <Facing label="where you are" entry={latest} />
-                )}
+          </div>
+        ) : (
+          <>
+            {/* The count and the road to the next look back — fixed. */}
+            <section className="mt-6 shrink-0 text-center">
+              <p className="font-display text-6xl font-light leading-none text-parchment">
+                {total}
+              </p>
+              <p className="mt-2 font-mono text-xs tracking-[0.25em] text-ash">
+                {total === 1 ? "reflection" : "reflections"}
+              </p>
+            </section>
+            <section className="mx-auto mt-6 w-full max-w-[440px] shrink-0">
+              <div className="h-[2px] w-full overflow-hidden rounded-full bg-ash/20">
+                <div
+                  className="h-full bg-patina"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
-              <p className="mt-10 text-center font-mono text-xs text-ash">
-                the same hand, {milestone === 30 ? "thirty" : milestone}{" "}
-                entries apart
+              <div className="mt-2 flex justify-between font-mono text-[10px] text-ash">
+                <span>{prev}</span>
+                <span>{next}</span>
+              </div>
+              <p className="mt-3 text-center font-mono text-xs text-ash">
+                {milestone
+                  ? `next look back at ${next} — ${next - total} to go`
+                  : `your first look back comes at 30 — ${next - total} to go`}
               </p>
             </section>
-          ) : (
-            <section className="mx-auto mt-16 max-w-[440px]">
-              <p className="text-center text-lg leading-relaxed text-ash">
-                At thirty entries, your first one is set beside your latest —
-                and the distance between them is left to speak for itself.
-              </p>
-            </section>
-          )}
-        </>
-      )}
+
+            {/* Only this region scrolls. */}
+            {milestone ? (
+              <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
+                <div className="grid gap-5 pb-2 sm:grid-cols-2">
+                  {first && <Facing label="where you began" entry={first} />}
+                  {latest && total > 1 && (
+                    <Facing label="where you are" entry={latest} />
+                  )}
+                </div>
+                <p className="mt-6 pb-1 text-center font-mono text-xs text-ash">
+                  the same hand, {milestone} entries apart
+                </p>
+              </div>
+            ) : (
+              <div className="mx-auto flex min-h-0 max-w-[400px] flex-1 items-center">
+                <p className="text-center text-base leading-relaxed text-ash">
+                  At thirty entries, your first one is set beside your latest —
+                  and the distance between them is left to speak for itself.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }
