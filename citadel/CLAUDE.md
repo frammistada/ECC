@@ -31,12 +31,13 @@ came before. This file loads every session; keep it concise and current.
   User-written only — never summarized, never machine-revised, not gated
   behind the subscription. Saves through the same `/api/settings` updater.
 - **Sections drawer.** Hamburger (top-left of the entry screen,
-  `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
-  sections (Reminders) stay visible but grayed out with a mono "soon"
-  tag — add them here first, then build. No-Mentor Journaling is a live
-  room (`/journal`) but appears in the drawer **only for subscribers**
-  (`NavMenu` takes a `subscribed` prop) — free users never see it, so the
-  core experience carries no per-visit upsell.
+  `components/nav-menu.js`) opens a left drawer of app sections. `NavMenu`
+  takes a `subscribed` prop and shows two section sets. No-Mentor
+  Journaling (`/journal`) is a subscriber-only room hidden entirely from
+  free users. Reminders (`/reminders`) is subscriber-only too, but shows
+  as a grayed "soon" item for free users (it was a placeholder long before
+  it shipped) and becomes a live link once they subscribe. Any remaining
+  href-less section renders grayed with a "soon" tag.
   Below the sections: "export my data" — a plain anchor to `/api/export`.
   To Myself is live (Milestones moved inside it; /milestones remains as
   the spread's own page, reached from To Myself's milestone rows).
@@ -75,6 +76,34 @@ came before. This file loads every session; keep it concise and current.
   time so chosen silence can't be mistaken for a failed reply. Deliberately
   secondary: no first-use interstitial, no upsell for free tiers, plain
   wording only.
+- **Daily reminder (subscribers only — web push, `/reminders` room).**
+  One push a day nudging the user to reflect ("Something tested you
+  today."). Deliberately not a configurable notification system: single
+  time, single message, no frequencies. UI lives in the Reminders drawer
+  room (`app/reminders/page.js` + `components/reminders-form.js`), not
+  settings — matches the drawer-room pattern and the drawer's existing
+  Reminders slot. Enabling asks Notification permission, registers
+  `/public/sw.js`, subscribes via `PushManager` (VAPID public key from
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`), and POSTs the subscription + time +
+  IANA timezone to `/api/reminders` (403 if not subscribed). Push
+  subscriptions live in `push_subscriptions` (one row per device);
+  `lib/push.js` sends via the `web-push` library with a VAPID keypair.
+  A "send a test reminder now" button (`/api/reminders/test`) fans a push
+  to the user's own devices for on-device confirmation. **Scheduling:**
+  `vercel.json` runs `/api/cron/reminders` hourly; it finds users whose
+  local wall-clock has reached `reminder_time` and who haven't been sent
+  today (`lib/reminders.js#isReminderDue`, pure/tested), pushes, and
+  stamps `reminder_last_sent` (once per local day). Cron is protected by
+  `CRON_SECRET` (Bearer), fails closed if unset, and reads across users
+  with the service role. **Timezone:** `reminder_time` is wall-clock
+  "HH:MM" in `reminder_timezone` (IANA, "UTC" fallback). **Platform:**
+  Android Chrome + desktop Chrome/Firefox/Edge work; **iOS is out of
+  scope** (web push there needs an installed PWA on 16.4+); a future
+  Android TWA wrap surfaces these as native notifications. **Infra/cost:**
+  hourly cron needs Vercel **Pro** (Hobby caps crons at once-daily); the
+  push transport itself is free. Tapping a notification opens `/` (SW
+  `notificationclick`). PWA surface added here: `manifest.webmanifest`,
+  `public/icons/*`, and the push-only service worker (no offline caching).
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
   original slip toggle: a `slipped` check-in offers the same draft
   (deliberate — same signal), and a fully silent yesterday (no entry, no
@@ -163,8 +192,11 @@ came before. This file loads every session; keep it concise and current.
 
 `profiles` (id, email, subscription_status, stripe_*, pattern_summary, mentor_mode,
 preferred_name, onboarding_answers, onboarded, accountability_name/email,
-age/aim/about_note) ·
+age/aim/about_note, reminder_enabled/reminder_time/reminder_timezone/
+reminder_last_sent) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
+`push_subscriptions` (user_id, endpoint unique, p256dh, auth — web-push
+devices for the daily reminder) ·
 `entries` (user_id, meditation_id, content, entry_type
 'reflection'|'checkin'|'journal', checkin_state) · `responses` (entry_id,
 content — none for 'journal' entries; 'journal' rows also have
