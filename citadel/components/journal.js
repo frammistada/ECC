@@ -392,22 +392,24 @@ export default function Journal({
   // ---------- compose view ----------
   return (
     <>
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+      {/* The panel region is fixed — it never scrolls. When the missed-day
+          note is up, it takes the card's place rather than stacking. */}
+      <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden">
         {checkoutSuccess && !subscribed && (
-          <p className="mt-4 font-mono text-xs text-ash">
+          <p className="text-center font-mono text-xs text-ash">
             subscription received — it may take a moment to register
           </p>
         )}
 
-        {missedVisible && (
-          <section className="mt-4 animate-settle rounded-2xl bg-marble p-6 text-ink">
+        {missedVisible ? (
+          <section className="animate-settle rounded-2xl bg-marble p-5 text-ink">
             <p className="font-mono text-xs text-ink/60">
               yesterday passed with nothing written
             </p>
-            <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed text-ink/90">
+            <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-ink/90">
               {composeMissedDayMessage(preferredName)}
             </p>
-            <div className="mt-6 flex items-baseline gap-6">
+            <div className="mt-4 flex items-baseline gap-6">
               <button
                 type="button"
                 onClick={sendMissed}
@@ -430,20 +432,20 @@ export default function Journal({
               )}
             </div>
           </section>
+        ) : (
+          (panel ??
+            (exchanges.length === 0 && (
+              <p className="text-center text-lg leading-relaxed">
+                Nothing written here yet.
+              </p>
+            ))) || null
         )}
         {missedState === "sent" && !missedVisible && (
-          <p className="mt-4 font-mono text-xs text-ash">sent</p>
+          <p className="text-center font-mono text-xs text-ash">sent</p>
         )}
 
-        {panel ??
-          (exchanges.length === 0 && (
-            <p className="mt-10 text-center text-lg leading-relaxed">
-              Nothing written here yet.
-            </p>
-          ))}
-
         {exchanges.length > 0 && (
-          <div className="flex justify-center">
+          <div className="mt-2 flex justify-center">
             <button
               type="button"
               onClick={() => setView("chat")}
@@ -457,75 +459,12 @@ export default function Journal({
         )}
       </div>
 
-      {paywalled ? (
-        paywall
-      ) : (
-        <form onSubmit={reflect} className="mt-6 border-t border-parchment/15 pt-6">
-          <label
-            htmlFor="entry"
-            className="block text-center font-mono text-xs tracking-[0.08em] text-ash"
-          >
-            what tested you today
-          </label>
-          <textarea
-            id="entry"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={4}
-            maxLength={5000}
-            disabled={waiting}
-            className="mt-4 w-full resize-y rounded-xl bg-marble p-4 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
-            placeholder="Where did you slip, or hold firm."
-          />
-
-          {hasAccountabilityContact && (
-            <label className="mt-4 flex cursor-pointer items-center gap-3 font-mono text-xs text-ash">
-              <input
-                type="checkbox"
-                checked={slipped}
-                onChange={(e) => setSlipped(e.target.checked)}
-                disabled={waiting}
-                className="accent-patina"
-              />
-              I fell short of what I set out to do today
-            </label>
-          )}
-
-          {error && <p className="mt-4 text-sm text-ash">{error}</p>}
-          <div className="mt-5 flex items-center justify-between gap-4">
-            <button
-              type="submit"
-              disabled={waiting || !draft.trim()}
-              className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
-            >
-              Reflect
-            </button>
-            {!subscribed && (
-              <p className="whitespace-nowrap text-right font-mono text-[10px] text-ash sm:text-xs">
-                {entryCount} of {FREE_ENTRY_LIMIT} free reflections used
-              </p>
-            )}
-          </div>
-        </form>
-      )}
-
-      {/* Micro check-in: the low-effort door. Deliberately reachable even
-          when the reflection paywall is up — a bad day never costs the
-          habit, on any tier. */}
-      {!checkinOpen ? (
-        <button
-          type="button"
-          onClick={() => {
-            setCheckinOpen(true);
-            setError(null);
-          }}
-          disabled={waiting}
-          className="mx-auto mt-4 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
-        >
-          no entry in you today? just check in
-        </button>
-      ) : (
-        <div className="mt-4 animate-settle border-t border-parchment/15 pt-5">
+      {/* The lower region swaps between three states — check-in controls,
+          the paywall, or the entry form — so it always fits the fixed,
+          non-scrolling screen. The check-in stays reachable even when the
+          reflection paywall is up: a bad day never costs the habit. */}
+      {checkinOpen ? (
+        <div className="mt-6 animate-settle border-t border-parchment/15 pt-6">
           <p className="text-center font-mono text-xs tracking-[0.08em] text-ash">
             how did the day go
           </p>
@@ -556,6 +495,7 @@ export default function Journal({
             placeholder="one line, if you want"
             className="mt-3 w-full rounded-xl bg-marble p-3 text-base text-ink outline-none placeholder:text-ink/60 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
           />
+          {error && <p className="mt-3 text-center text-sm text-ash">{error}</p>}
           <div className="mt-4 flex items-center justify-center gap-6">
             <button
               type="button"
@@ -579,6 +519,74 @@ export default function Journal({
             </button>
           </div>
         </div>
+      ) : (
+        <>
+          {paywalled ? (
+            paywall
+          ) : (
+            <form
+              onSubmit={reflect}
+              className="mt-4 border-t border-parchment/15 pt-5"
+            >
+              <label
+                htmlFor="entry"
+                className="block text-center font-mono text-xs tracking-[0.08em] text-ash"
+              >
+                what tested you today
+              </label>
+              <textarea
+                id="entry"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                rows={3}
+                maxLength={5000}
+                disabled={waiting}
+                className="mt-3 w-full resize-y rounded-xl bg-marble p-4 text-lg leading-relaxed text-ink outline-none placeholder:text-ink/70 focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+                placeholder="Where did you slip, or hold firm."
+              />
+
+              {hasAccountabilityContact && (
+                <label className="mt-4 flex cursor-pointer items-center gap-3 font-mono text-xs text-ash">
+                  <input
+                    type="checkbox"
+                    checked={slipped}
+                    onChange={(e) => setSlipped(e.target.checked)}
+                    disabled={waiting}
+                    className="accent-patina"
+                  />
+                  I fell short of what I set out to do today
+                </label>
+              )}
+
+              {error && <p className="mt-3 text-sm text-ash">{error}</p>}
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <button
+                  type="submit"
+                  disabled={waiting || !draft.trim()}
+                  className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
+                >
+                  Reflect
+                </button>
+                {!subscribed && (
+                  <p className="whitespace-nowrap text-right font-mono text-[10px] text-ash sm:text-xs">
+                    {entryCount} of {FREE_ENTRY_LIMIT} free reflections used
+                  </p>
+                )}
+              </div>
+            </form>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setCheckinOpen(true);
+              setError(null);
+            }}
+            disabled={waiting}
+            className="mx-auto mt-3 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+          >
+            no entry in you today? just check in
+          </button>
+        </>
       )}
     </>
   );
