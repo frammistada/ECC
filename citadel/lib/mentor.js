@@ -5,6 +5,7 @@ import { buildMentorSystem } from "@/lib/mentor-prompt";
 // mentorMode: 'direct' | 'steady'. patternSummary: rolling note or null.
 // background: { age, aim, note } from "Who am I", or null.
 // openLoops: [{ description, created_at }] unresolved, newest first, or null.
+// kind: 'reflection' (full treatment) | 'checkin' (short, light reply).
 // Returns the mentor's text, or throws (Anthropic errors bubble to the route).
 export async function getMentorResponse(
   entry,
@@ -14,6 +15,7 @@ export async function getMentorResponse(
   preferredName = null,
   background = null,
   openLoops = null,
+  kind = "reflection",
 ) {
   if (process.env.CITADEL_MOCK_MENTOR === "1") {
     return "[mock mentor — set ANTHROPIC_API_KEY for the real one] You wrote it down, which is more than most manage. What part of this were you hoping I wouldn't notice?";
@@ -28,7 +30,8 @@ export async function getMentorResponse(
   const client = new Anthropic();
   const result = await client.messages.create({
     model: "claude-opus-4-8",
-    max_tokens: 2048,
+    // Check-ins get a shorter budget to match the shorter reply.
+    max_tokens: kind === "checkin" ? 1024 : 2048,
     thinking: { type: "adaptive" },
     system: buildMentorSystem(
       mentorMode,
@@ -36,6 +39,7 @@ export async function getMentorResponse(
       preferredName,
       background,
       openLoops,
+      kind,
     ),
     messages,
   });

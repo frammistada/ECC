@@ -68,6 +68,7 @@ export default async function MeditationPage({ params }) {
             checkoutSuccess={false}
             hasAccountabilityContact={Boolean(profile?.accountability_email)}
             meditationId={meditation.id}
+            startInChat
           />
         </div>
       </div>

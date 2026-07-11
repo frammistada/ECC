@@ -11,6 +11,7 @@ import { MenuMark } from "@/components/icons";
 // the shape of the app is visible before every room exists.
 const SECTIONS = [
   { label: "Who am I", href: "/who-am-i" },
+  { label: "Milestones", href: "/milestones" },
   { label: "To Myself" },
   { label: "Reminders" },
   { label: "No-Mentor Journaling" },

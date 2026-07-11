@@ -41,6 +41,11 @@ create table public.entries (
   user_id uuid not null references public.profiles (id) on delete cascade,
   content text not null,
   meditation_id uuid references public.meditations (id) on delete cascade,
+  -- Micro check-ins (migration 008): a lighter entry type. checkin_state
+  -- is set only when entry_type = 'checkin'.
+  entry_type text not null default 'reflection'
+    check (entry_type in ('reflection', 'checkin')),
+  checkin_state text check (checkin_state in ('held', 'slipped', 'neither')),
   created_at timestamptz not null default now()
 );
 
