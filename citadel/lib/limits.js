@@ -15,6 +15,8 @@ export const GATES = {
   consequence: false,
   // Milestone reflection (first entry beside the latest).
   milestones: false,
+  // "To Myself" — weekly insights (+ the milestone timeline).
+  toMyself: false,
 };
 
 export function gateOpen(gate, profile) {

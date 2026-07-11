@@ -35,6 +35,8 @@ came before. This file loads every session; keep it concise and current.
   sections (To Myself, Reminders, No-Mentor Journaling) stay visible but
   grayed out with a mono "soon" tag — add them here first, then build.
   Below the sections: "export my data" — a plain anchor to `/api/export`.
+  To Myself is live (Milestones moved inside it; /milestones remains as
+  the spread's own page, reached from To Myself's milestone rows).
 - **Data export (trust feature — never gate it).** `GET /api/export`
   streams every entry + mentor response (all pages, oldest first) as a
   plain-text download (`lib/export.js` builds the text). User-written
@@ -74,6 +76,17 @@ came before. This file loads every session; keep it concise and current.
   message region scrolling. Meditation detail pages open directly in
   chat view (`startInChat`). Compose offers a "read today's conversation"
   link when the page already has exchanges.
+- **"To Myself" (premium-flagged, GATES.toMyself).** `/to-myself` in the
+  drawer: one timeline, newest first — weekly notes interleaved with
+  milestone markers (compact rows linking to /milestones, stamped on the
+  day the Nth reflection was written). Weekly notes: one model call per
+  user per calendar week (Monday-start UTC; `lib/insights.js`), generated
+  lazily on visit for the last completed week, stored in
+  `weekly_insights` and never regenerated — a user-facing note on a
+  bounded week, distinct from `pattern_summary`. Skips weeks with fewer
+  than 3 entries+check-ins; check-in-only weeks generate but the prompt
+  says to stay short. Qualitative and written only — no streaks, charts,
+  or scores here, ever. Page never scrolls; only the list does.
 - **The panel.** Where the history box sat, compose shows one quiet card
   at a time (`lib/panel.js` builds 8–12 from data already fetched — no
   model calls: stoic line, evening practice, pattern note, mentor's last
@@ -130,6 +143,8 @@ age/aim/about_note) ·
 `entries` (user_id, meditation_id, content, entry_type
 'reflection'|'checkin', checkin_state) · `responses` (entry_id, content) ·
 `open_loops` (user_id, entry_id, description, resolved, resolved_at) ·
+`weekly_insights` (user_id, week_start unique-per-user, content,
+entry_count, checkin_count) ·
 `user_activity_log` (per-entry: mentor_mode, entry_length, goal_status — logging
 only, nothing acts on it yet). Canonical DDL in `supabase/schema.sql`; changes go
 through numbered files in `supabase/migrations/` AND get applied to the live
@@ -170,8 +185,8 @@ project (id `ktztzjajwhlgqsbrcftk`).
 - **No scrolling on primary screens**: splash, sign-in, onboarding, entry
   pages, and meditations never page-scroll. Entry pages scroll only their
   exchange region; meditations scrolls only its list; milestones scrolls
-  only its first/latest spread. Settings and Who am I are the only pages
-  that scroll.
+  only its first/latest spread; to-myself scrolls only its timeline.
+  Settings and Who am I are the only pages that scroll.
 - **Type:** Fraunces (display/title, never bold), Source Serif 4 (body), IBM Plex
   Mono (dates, labels, counters). It's a reading app.
 - **Mentor response = manuscript marginalia**: italic Source Serif, indented, thin
