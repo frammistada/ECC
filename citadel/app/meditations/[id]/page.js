@@ -60,7 +60,7 @@ export default async function MeditationPage({ params }) {
             {meditation.mentor_mode ? ` · ${meditation.mentor_mode}` : ""}
           </p>
         </header>
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
+        <div className="flex min-h-0 flex-1 flex-col">
           <Journal
             initialExchanges={exchanges}
             initialCount={entryCount ?? 0}

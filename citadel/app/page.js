@@ -201,10 +201,10 @@ export default async function Home({ searchParams }) {
             </Link>
           </div>
         </nav>
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-        <header className="mt-4 text-center">
-          <RingMark className="mx-auto h-14 w-14 text-parchment/60" />
-          <h1 className="mt-4 font-display text-4xl font-light tracking-[0.14em] text-parchment">
+        <div className="flex min-h-0 flex-1 flex-col">
+        <header className="mt-3 shrink-0 text-center">
+          <RingMark className="mx-auto h-12 w-12 text-parchment/60" />
+          <h1 className="mt-3 font-display text-4xl font-light tracking-[0.14em] text-parchment">
             Citadel
           </h1>
           <p className="mt-2 font-mono text-xs tracking-[0.08em] text-ash">

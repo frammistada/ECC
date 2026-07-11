@@ -110,24 +110,17 @@ export function buildPanelCards({
     cards.push({ kind: "loop", label: "still open", body: openLoop.description });
   }
 
-  // 6. Cadence — streak, or the honest gap.
+  // 6. Cadence — streak, or the honest gap. Bare values; the terseness
+  // is the voice.
   const recentDays = recentEntries.map((e) => utcDay(e.created_at));
   const run = streakFrom(recentDays, today);
   if (run >= 2) {
-    cards.push({
-      kind: "cadence",
-      label: "cadence",
-      body: `${run} days in a row. The habit is the work.`,
-    });
+    cards.push({ kind: "cadence", label: "cadence", body: `${run} days in a row` });
   } else if (recentDays.length > 0 && !recentDays.includes(today)) {
     const last = new Date(`${recentDays[0]}T00:00:00Z`);
     const gap = Math.round((Date.parse(`${today}T00:00:00Z`) - last.getTime()) / 86400000);
     if (gap >= 2) {
-      cards.push({
-        kind: "cadence",
-        label: "cadence",
-        body: `${gap} days since you last wrote. The page holds no grudge.`,
-      });
+      cards.push({ kind: "cadence", label: "cadence", body: `${gap} days quiet` });
     }
   }
 
@@ -136,7 +129,7 @@ export function buildPanelCards({
     cards.push({
       kind: "ledger",
       label: "the ledger",
-      body: `${totalEntries} ${totalEntries === 1 ? "entry" : "entries"} across ${pageCount} ${pageCount === 1 ? "page" : "pages"}.`,
+      body: `${totalEntries} ${totalEntries === 1 ? "entry" : "entries"} · ${pageCount} ${pageCount === 1 ? "page" : "pages"}`,
     });
   }
 
@@ -149,7 +142,7 @@ export function buildPanelCards({
           86400000,
       ) + 1;
     if (days > 1) {
-      cards.push({ kind: "since", label: "the count", body: `Day ${days} of keeping this.` });
+      cards.push({ kind: "since", label: "the count", body: `day ${days}` });
     }
   }
 
@@ -165,7 +158,7 @@ export function buildPanelCards({
     cards.push({
       kind: "balance",
       label: "this month's check-ins",
-      body: `Held ${held} · slipped ${slipped}. Both are data, not verdicts.`,
+      body: `held ${held} · slipped ${slipped}`,
     });
   }
 
@@ -175,7 +168,7 @@ export function buildPanelCards({
     cards.push({
       kind: "milestone",
       label: "milestones",
-      body: `${reflectionCount} ${reflectionCount === 1 ? "reflection" : "reflections"}. The next look back comes at ${next}.`,
+      body: `${reflectionCount} of ${next} · next look back`,
     });
   }
 

@@ -31,11 +31,14 @@ export default function MentorPanel({ cards }) {
   if (!cards?.length) return null;
   const card = cards[index % cards.length];
 
+  // Bounded height, clamped lines, and shrinkable: the card takes at most
+  // 136px and gives ground on short screens instead of overlapping its
+  // neighbors — this region never scrolls.
   return (
-    <div className="flex min-h-[180px] flex-col justify-center">
+    <div className="flex h-[136px] min-h-0 shrink flex-col justify-center overflow-hidden">
       <div
         className={
-          "mx-auto max-w-[420px] text-center transition-opacity ease-in-out " +
+          "mx-auto max-w-[420px] px-2 text-center transition-opacity ease-in-out " +
           (visible ? "opacity-100" : "opacity-0")
         }
         style={{ transitionDuration: `${FADE_MS}ms` }}
@@ -45,7 +48,7 @@ export default function MentorPanel({ cards }) {
         </p>
         <p
           className={
-            "mt-4 text-lg leading-relaxed " +
+            "mt-3 line-clamp-3 text-base leading-relaxed " +
             (card.kind === "quote" || card.kind === "question"
               ? "italic text-parchment/90"
               : "text-parchment")
@@ -54,7 +57,7 @@ export default function MentorPanel({ cards }) {
           {card.body}
         </p>
         {card.by && (
-          <p className="mt-3 font-mono text-xs text-ash">— {card.by}</p>
+          <p className="mt-2 font-mono text-xs text-ash">— {card.by}</p>
         )}
       </div>
     </div>
