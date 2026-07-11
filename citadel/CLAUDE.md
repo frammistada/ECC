@@ -62,7 +62,25 @@ came before. This file loads every session; keep it concise and current.
   reflections, then 90, then every 90, the first entry+response is shown
   beside the latest. Entry-count based, not day based — gaps shouldn't
   push it away. Revisitable page, no popup. Gated by `GATES.milestones`
-  (false until the payment wall lands).
+  (false until the payment wall lands). Design: the count as a large
+  Fraunces numeral, a thin patina rule filling toward the next look back,
+  then the two entries as facing panel cards.
+- **Compose → chat.** The entry screen has two views (`components/
+  journal.js`). Compose: the rotating panel (below) + the entry box —
+  no history list. The moment something is sent, the screen becomes the
+  conversation: the user's words in right-aligned marble bubbles, the
+  mentor's replies still marginalia on the left (the no-chat-bubble rule
+  applies to the mentor only), composer docked at the bottom, only the
+  message region scrolling. Meditation detail pages open directly in
+  chat view (`startInChat`). Compose offers a "read today's conversation"
+  link when the page already has exchanges.
+- **The panel.** Where the history box sat, compose shows one quiet card
+  at a time (`lib/panel.js` builds 8–12 from data already fetched — no
+  model calls: stoic line, evening practice, pattern note, mentor's last
+  question, open thread, cadence/streak, ledger, day count, check-in
+  balance, milestone progress, the user's aim). `components/
+  mentor-panel.js` rotates every 90s with a ~700ms crossfade — the one
+  sanctioned motion beyond animate-settle. Never two cards at once.
 - **Open loops.** After each reflect, a Haiku call (`lib/loops.js`) extracts
   0–2 stated intentions/commitments/unresolved tensions (none forced; it
   sees what's already tracked so it never duplicates). Stored in

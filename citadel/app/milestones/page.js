@@ -22,25 +22,29 @@ function nextMilestone(count) {
   return (Math.floor(count / 90) + 1) * 90;
 }
 
-function Exchange({ label, entry }) {
+// One side of the spread: a lifted panel holding an entry and its reply.
+function Facing({ label, entry }) {
   return (
-    <div className="min-w-0">
-      <p className="font-mono text-xs text-ash">
-        {label} · <LocalDay iso={entry.created_at} />
+    <article className="min-w-0 rounded-2xl border border-parchment/10 bg-panel p-6 sm:p-7">
+      <p className="font-mono text-xs tracking-[0.15em] text-ash">{label}</p>
+      <p className="mt-1.5 font-mono text-xs text-ash/70">
+        <LocalDay iso={entry.created_at} />
       </p>
-      <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed">
+      <p className="mt-5 whitespace-pre-wrap text-lg leading-relaxed">
         {entry.content}
       </p>
       {entry.responses?.[0]?.content && (
-        <blockquote className="mt-6 border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
+        <blockquote className="mt-7 border-l border-patina pl-5 text-lg italic leading-relaxed text-parchment/90">
           {entry.responses[0].content}
         </blockquote>
       )}
-    </div>
+    </article>
   );
 }
 
-// Revisitable by design — a page in the drawer, not a one-time popup.
+// The count writ large, a thin rule filling toward the next look back,
+// and — once a milestone is reached — the first entry set beside the
+// latest as facing pages. Revisitable by design; never a popup.
 export default async function MilestonesPage() {
   if (!isSupabaseConfigured()) redirect("/");
 
@@ -62,6 +66,12 @@ export default async function MilestonesPage() {
   const gated = !gateOpen("milestones", profile);
   const total = count ?? 0;
   const milestone = reachedMilestone(total);
+  const next = nextMilestone(total);
+  const prev = milestone ?? 0;
+  const progress =
+    next === prev
+      ? 100
+      : Math.min(100, Math.round(((total - prev) / (next - prev)) * 100));
 
   let first = null;
   let latest = null;
@@ -87,7 +97,7 @@ export default async function MilestonesPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-[720px] px-6 py-16 sm:py-24">
+    <main className="mx-auto min-h-screen max-w-[760px] px-6 py-16 sm:py-24">
       <header className="flex items-baseline justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -105,39 +115,66 @@ export default async function MilestonesPage() {
         </nav>
       </header>
 
-      <section className="mt-16">
-        {gated ? (
+      {gated ? (
+        <section className="mt-16">
           <p className="text-lg leading-relaxed">
             Milestones are part of the subscription.
           </p>
-        ) : !milestone ? (
-          <>
-            <p className="text-lg leading-relaxed">
-              You have written here {total === 0 ? "no" : total}{" "}
-              {total === 1 ? "time" : "times"}. At thirty entries, your first
-              one is shown beside your latest.
+        </section>
+      ) : (
+        <>
+          {/* The count, writ large. */}
+          <section className="mt-16 text-center">
+            <p className="font-display text-8xl font-light leading-none text-parchment">
+              {total}
             </p>
-            <p className="mt-4 font-mono text-xs text-ash">
-              {nextMilestone(total) - total} to go
+            <p className="mt-3 font-mono text-xs tracking-[0.25em] text-ash">
+              {total === 1 ? "reflection" : "reflections"}
             </p>
-          </>
-        ) : (
-          <>
-            <p className="text-lg leading-relaxed">
-              You have written here {total} times.
-            </p>
-            <div className="mt-12 grid gap-12 sm:grid-cols-2 sm:gap-10">
-              {first && <Exchange label="entry one" entry={first} />}
-              {latest && total > 1 && (
-                <Exchange label={`entry ${total}`} entry={latest} />
-              )}
+          </section>
+
+          {/* The road to the next look back. */}
+          <section className="mx-auto mt-12 max-w-[440px]">
+            <div className="h-[2px] w-full overflow-hidden rounded-full bg-ash/20">
+              <div
+                className="h-full bg-patina"
+                style={{ width: `${progress}%` }}
+              />
             </div>
-            <p className="mt-14 font-mono text-xs text-ash">
-              next look back at {nextMilestone(total)} entries
+            <div className="mt-2 flex justify-between font-mono text-[10px] text-ash">
+              <span>{prev}</span>
+              <span>{next}</span>
+            </div>
+            <p className="mt-5 text-center font-mono text-xs text-ash">
+              {milestone
+                ? `next look back at ${next} — ${next - total} to go`
+                : `your first look back comes at 30 — ${next - total} to go`}
             </p>
-          </>
-        )}
-      </section>
+          </section>
+
+          {milestone ? (
+            <section className="mt-16">
+              <div className="grid gap-6 sm:grid-cols-2">
+                {first && <Facing label="where you began" entry={first} />}
+                {latest && total > 1 && (
+                  <Facing label="where you are" entry={latest} />
+                )}
+              </div>
+              <p className="mt-10 text-center font-mono text-xs text-ash">
+                the same hand, {milestone === 30 ? "thirty" : milestone}{" "}
+                entries apart
+              </p>
+            </section>
+          ) : (
+            <section className="mx-auto mt-16 max-w-[440px]">
+              <p className="text-center text-lg leading-relaxed text-ash">
+                At thirty entries, your first one is set beside your latest —
+                and the distance between them is left to speak for itself.
+              </p>
+            </section>
+          )}
+        </>
+      )}
     </main>
   );
 }

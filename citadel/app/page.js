@@ -7,6 +7,8 @@ import { LocalDate } from "@/components/local-date";
 import Journal from "@/components/journal";
 import RingMark from "@/components/ring-mark";
 import NavMenu from "@/components/nav-menu";
+import MentorPanel from "@/components/mentor-panel";
+import { buildPanelCards } from "@/lib/panel";
 import { BookMark, GearMark } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +63,21 @@ export default async function Home({ searchParams }) {
   // check-in counts as showing up: only a fully silent day triggers.
   const dayStart = new Date(`${today}T00:00:00Z`);
   const yesterdayStart = new Date(dayStart.getTime() - 86400000);
+  const panelSince = new Date(
+    dayStart.getTime() - 45 * 86400000,
+  ).toISOString();
   const [
     { data: profile },
     { count: entryCount },
     { data: todayMed },
     { count: yesterdayCount },
     { count: priorCount },
+    { count: totalEntries },
+    { count: pageCount },
+    { data: openLoops },
+    { data: recentEntries },
+    { data: firstEntries },
+    { data: lastExchange },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     // Paywall allowance counts full reflections only — check-ins are free.
@@ -92,6 +103,41 @@ export default async function Home({ searchParams }) {
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
       .lt("created_at", yesterdayStart.toISOString()),
+    // Everything below feeds the compose-screen panel — light reads only.
+    supabase
+      .from("entries")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("meditations")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("open_loops")
+      .select("description")
+      .eq("user_id", user.id)
+      .eq("resolved", false)
+      .order("created_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("entries")
+      .select("created_at, checkin_state")
+      .eq("user_id", user.id)
+      .gte("created_at", panelSince)
+      .order("created_at", { ascending: false })
+      .limit(200),
+    supabase
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1),
+    supabase
+      .from("entries")
+      .select("created_at, responses(content)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
 
   // Offer the missed-day note only to someone with a history (never greet
@@ -125,6 +171,17 @@ export default async function Home({ searchParams }) {
     response: e.responses?.[0]?.content ?? "",
     at: e.created_at,
   }));
+
+  const panelCards = buildPanelCards({
+    profile,
+    reflectionCount: entryCount ?? 0,
+    totalEntries: totalEntries ?? 0,
+    pageCount: pageCount ?? 0,
+    recentEntries: recentEntries ?? [],
+    firstEntryAt: firstEntries?.[0]?.created_at ?? null,
+    lastResponse: lastExchange?.[0]?.responses?.[0]?.content ?? null,
+    openLoop: openLoops?.[0] ?? null,
+  });
 
   return (
     <main className="min-h-dvh px-3 py-3">
@@ -163,6 +220,7 @@ export default async function Home({ searchParams }) {
             missedYesterday={missedYesterday}
             contactName={profile?.accountability_name || null}
             preferredName={profile?.preferred_name || null}
+            panel={<MentorPanel cards={panelCards} />}
           />
         </div>
       </div>
