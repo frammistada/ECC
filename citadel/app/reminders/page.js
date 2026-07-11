@@ -55,6 +55,8 @@ export default async function RemindersPage() {
           initialGoalTime={profile?.goal_reminder_time}
           initialQuoteEnabled={profile?.quote_reminder_enabled}
           initialQuoteCount={profile?.quote_reminder_count}
+          initialWakeTime={profile?.wake_time}
+          initialSleepTime={profile?.sleep_time}
           hasAim={Boolean((profile?.aim || "").trim())}
           vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""}
         />

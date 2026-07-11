@@ -98,10 +98,15 @@ came before. This file loads every session; keep it concise and current.
     1, **max 6**), from the static `QUOTE_BANK` in `lib/reminders.js`
     (original lines in the mentor's voice — no exclamation, no philosopher
     citations; a config array, not a table, so the cron needs no DB read
-    for content). Slots are evenly spaced by 24h/count from a **fixed
-    08:00 local base** (independent of the reflection time). `slots_sent`
-    tracks how many of today's slots have fired so the hourly cron sends
-    at most one per slot and never bursts to catch up.
+    for content). Slots start at wake and are spaced evenly across the
+    **waking window** (`profiles.wake_time`/`sleep_time`, defaults
+    07:00–23:00; migration 013), so none fire while the user is asleep —
+    e.g. count 3 with a 7:00–23:00 day lands at 7:00 / 12:20 / 17:40. If
+    the bedtime isn't after wake (past-midnight), the window clamps to
+    end-of-day so slots stay within one calendar day. `slots_sent` tracks
+    how many of today's slots have fired so the hourly cron sends at most
+    one per slot and never bursts to catch up. The reminders room shows a
+    live preview of the day's slot times.
 
   All the due/slot logic is pure and unit-tested in `lib/reminders.js`
   (`isReminderDue`, `isGoalReminderDue`, `quoteReminderStatus`,
@@ -120,10 +125,9 @@ came before. This file loads every session; keep it concise and current.
   push there needs an installed PWA on 16.4+); a future Android TWA wrap
   surfaces these as native notifications. **Infra/cost:** hourly cron
   needs Vercel **Pro** (Hobby caps crons at once-daily); the push
-  transport itself is free. High quote counts distribute across a full
-  24h, so counts ≥3 include an overnight slot by design. All notifications
-  open `/` on tap (SW `notificationclick`). PWA surface:
-  `manifest.webmanifest`, `public/icons/*`, push-only service worker.
+  transport itself is free. All notifications open `/` on tap (SW
+  `notificationclick`). PWA surface: `manifest.webmanifest`,
+  `public/icons/*`, push-only service worker.
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
   original slip toggle: a `slipped` check-in offers the same draft
   (deliberate — same signal), and a fully silent yesterday (no entry, no
@@ -215,7 +219,7 @@ preferred_name, onboarding_answers, onboarded, accountability_name/email,
 age/aim/about_note, reminder_enabled/reminder_time/reminder_timezone/
 reminder_last_sent, goal_reminder_enabled/goal_reminder_time/
 goal_reminder_last_sent, quote_reminder_enabled/quote_reminder_count/
-quote_reminder_last_sent/quote_reminder_slots_sent) ·
+quote_reminder_last_sent/quote_reminder_slots_sent, wake_time/sleep_time) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
 `push_subscriptions` (user_id, endpoint unique, p256dh, auth — web-push
 devices for the daily reminder) ·

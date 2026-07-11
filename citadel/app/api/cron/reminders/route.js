@@ -42,7 +42,7 @@ export async function GET(request) {
   const { data: profiles, error } = await admin
     .from("profiles")
     .select(
-      "id, aim, reminder_timezone, " +
+      "id, aim, reminder_timezone, wake_time, sleep_time, " +
         "reminder_enabled, reminder_time, reminder_last_sent, " +
         "goal_reminder_enabled, goal_reminder_time, goal_reminder_last_sent, " +
         "quote_reminder_enabled, quote_reminder_count, quote_reminder_last_sent, quote_reminder_slots_sent",

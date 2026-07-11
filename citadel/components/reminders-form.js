@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { quoteSlots } from "@/lib/reminders";
+
+// minutes-since-midnight -> "7:00 AM", for the quote-schedule preview.
+function fmtMinutes(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  const ap = h < 12 ? "AM" : "PM";
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${hh}:${String(m).padStart(2, "0")} ${ap}`;
+}
 
 // urlBase64 VAPID key -> Uint8Array, as PushManager.subscribe expects.
 function urlBase64ToUint8Array(base64) {
@@ -31,6 +41,8 @@ export default function RemindersForm({
   initialGoalTime,
   initialQuoteEnabled,
   initialQuoteCount,
+  initialWakeTime,
+  initialSleepTime,
   hasAim,
   vapidPublicKey,
 }) {
@@ -46,6 +58,8 @@ export default function RemindersForm({
   const [quoteCount, setQuoteCount] = useState(
     Math.min(Math.max(Number(initialQuoteCount) || 1, 1), MAX_QUOTE_COUNT),
   );
+  const [wakeTime, setWakeTime] = useState(initialWakeTime || "07:00");
+  const [sleepTime, setSleepTime] = useState(initialSleepTime || "23:00");
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -66,8 +80,16 @@ export default function RemindersForm({
     goalTime,
     quoteEnabled,
     quoteCount,
+    wakeTime,
+    sleepTime,
   });
   const anyEnabled = reflectionEnabled || goalEnabled || quoteEnabled;
+
+  // Live preview of when today's quotes land, from the current count and
+  // waking window — shows the user the waking-hours distribution.
+  const quoteTimes = quoteSlots(quoteCount, wakeTime, sleepTime)
+    .map(fmtMinutes)
+    .join(", ");
 
   // Ask permission, register the SW, and return this device's subscription.
   async function ensureSubscription() {
@@ -128,6 +150,8 @@ export default function RemindersForm({
           },
           goal: { enabled: next.goalEnabled, time: next.goalTime },
           quote: { enabled: next.quoteEnabled, count: next.quoteCount },
+          wakeTime: next.wakeTime,
+          sleepTime: next.sleepTime,
         }),
       });
       const data = await res.json();
@@ -141,6 +165,8 @@ export default function RemindersForm({
       setGoalTime(next.goalTime);
       setQuoteEnabled(next.quoteEnabled);
       setQuoteCount(next.quoteCount);
+      setWakeTime(next.wakeTime);
+      setSleepTime(next.sleepTime);
       setSaved(true);
     } catch {
       setError("Something failed. Try again.");
@@ -342,8 +368,62 @@ export default function RemindersForm({
             )}
           </div>
           <p className="mt-3 font-mono text-[11px] text-ash">
-            up to {MAX_QUOTE_COUNT} a day, spaced evenly
+            up to {MAX_QUOTE_COUNT} a day, spread across your waking hours
           </p>
+          <p className="mt-2 font-mono text-[11px] text-ash">
+            today: {quoteTimes}
+          </p>
+        </div>
+      </section>
+
+      {/* --- Waking hours --- */}
+      <section className={rule}>
+        <p className="font-mono text-xs text-ash">your day</p>
+        <p className="mt-4 text-base leading-relaxed text-ash">
+          When you wake and when you sleep. Quote reminders are spaced across
+          these hours, so none arrive while you are resting.
+        </p>
+        <div className="mt-8 flex flex-wrap items-end gap-8">
+          <div>
+            <label htmlFor="wake-time" className="font-mono text-xs text-ash">
+              wake
+            </label>
+            <input
+              id="wake-time"
+              type="time"
+              value={wakeTime}
+              disabled={busy}
+              onChange={(e) => {
+                setWakeTime(e.target.value);
+                setSaved(false);
+              }}
+              className="mt-4 block rounded-xl bg-marble px-5 py-3 text-lg text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+            />
+          </div>
+          <div>
+            <label htmlFor="sleep-time" className="font-mono text-xs text-ash">
+              sleep
+            </label>
+            <input
+              id="sleep-time"
+              type="time"
+              value={sleepTime}
+              disabled={busy}
+              onChange={(e) => {
+                setSleepTime(e.target.value);
+                setSaved(false);
+              }}
+              className="mt-4 block rounded-xl bg-marble px-5 py-3 text-lg text-ink outline-none focus:ring-1 focus:ring-patina/50 disabled:opacity-60"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => persist(current())}
+            disabled={busy}
+            className="rounded-xl bg-cream px-6 py-3 text-lg tracking-wide text-ink disabled:text-ink/50"
+          >
+            Save
+          </button>
         </div>
       </section>
 

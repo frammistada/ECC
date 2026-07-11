@@ -17,13 +17,11 @@ export const REMINDER_TITLE = "Citadel";
 // Plain, in the mentor's register — no hype, no emoji, no exclamation.
 export const REFLECTION_BODY = "Something tested you today.";
 
-// Quote reminder bounds. Max 6 (every 4h): more reads as spam, and even
-// distribution over a full day already pushes higher counts overnight.
+// Quote reminder bounds. Max 6: more reads as spam.
 export const MAX_QUOTE_COUNT = 6;
-// Quotes start from a fixed 08:00 local base — independent of whether the
-// reflection reminder is enabled (its time may be unset), so the two
-// features never couple.
-export const QUOTE_BASE_MINUTES = 8 * 60;
+// Waking-window defaults (07:00–23:00) when the user hasn't set their own.
+export const WAKE_DEFAULT_MINUTES = 7 * 60;
+export const SLEEP_DEFAULT_MINUTES = 23 * 60;
 
 // A small curated bank in the mentor's voice: restrained, Stoic-adjacent,
 // no exclamation points, and — per the mentor voice rules — no philosopher
@@ -136,27 +134,40 @@ export function clampQuoteCount(count) {
   return Math.min(n, MAX_QUOTE_COUNT);
 }
 
-// The times-of-day (minutes since local midnight) a quote fires, given a
-// count and base. Evenly spaced by 24h/count and wrapped into a single day,
-// sorted ascending. e.g. count 3, base 08:00 -> [0, 480, 960] (00:00, 08:00,
-// 16:00) — 8h apart.
-export function quoteSlots(count, baseMinutes = QUOTE_BASE_MINUTES) {
+// The waking window in minutes-since-midnight, from a profile's wake/sleep
+// (defaults when unset). If sleep isn't strictly after wake — an unset or
+// past-midnight bedtime — the window is clamped to end at midnight, so all
+// quote slots stay within one calendar day and never fire while asleep.
+export function wakingWindow(wakeTime, sleepTime) {
+  const wake = parseHhmm(wakeTime) ?? WAKE_DEFAULT_MINUTES;
+  const sleepRaw = parseHhmm(sleepTime) ?? SLEEP_DEFAULT_MINUTES;
+  const end = sleepRaw > wake ? sleepRaw : 1440;
+  return { wake, end };
+}
+
+// The times-of-day (minutes since local midnight) a quote fires: `count`
+// slots starting at wake, spaced evenly across the waking window. e.g.
+// count 3, wake 07:00, sleep 23:00 -> [420, 740, 1060] (7:00, 12:20, 17:40).
+// count 1 -> just wake. None fire before wake or at/after sleep.
+export function quoteSlots(
+  count,
+  wakeTime,
+  sleepTime,
+) {
   const n = clampQuoteCount(count);
-  const step = 1440 / n;
+  const { wake, end } = wakingWindow(wakeTime, sleepTime);
+  const step = (end - wake) / n;
   const slots = [];
   for (let k = 0; k < n; k++) {
-    slots.push(Math.round((baseMinutes + k * step)) % 1440);
+    slots.push(Math.round(wake + k * step) % 1440);
   }
   return slots.sort((a, b) => a - b);
 }
 
 // How many of today's quote slots have elapsed by `nowMinutes` (0..count).
-export function quoteSlotsElapsed(
-  count,
-  nowMinutes,
-  baseMinutes = QUOTE_BASE_MINUTES,
-) {
-  return quoteSlots(count, baseMinutes).filter((s) => nowMinutes >= s).length;
+export function quoteSlotsElapsed(count, nowMinutes, wakeTime, sleepTime) {
+  return quoteSlots(count, wakeTime, sleepTime).filter((s) => nowMinutes >= s)
+    .length;
 }
 
 // Quote reminder due-check. Returns { due, elapsed, date } — `elapsed` is
@@ -170,7 +181,12 @@ export function quoteReminderStatus(profile, now = new Date()) {
     profile.quote_reminder_last_sent === date
       ? profile.quote_reminder_slots_sent || 0
       : 0;
-  const elapsed = quoteSlotsElapsed(count, minutes);
+  const elapsed = quoteSlotsElapsed(
+    count,
+    minutes,
+    profile.wake_time,
+    profile.sleep_time,
+  );
   return { due: sentSlots < elapsed, elapsed, date };
 }
 
