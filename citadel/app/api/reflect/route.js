@@ -79,22 +79,24 @@ export async function POST(request) {
     );
   }
 
-  // Each entry belongs to a meditation (an entry page). A meditationId in
-  // the body targets a specific page; otherwise the day's automatic page
-  // is found or created on first write.
-  const meditation = await resolveMeditation(
-    supabase,
-    user.id,
-    body?.meditationId,
-  );
-  if (!meditation) {
-    if (typeof body?.meditationId === "string" && body.meditationId) {
-      return Response.json({ error: "That page is gone." }, { status: 404 });
+  // A mentor entry belongs to a meditation (an entry page): a meditationId
+  // targets a specific page, otherwise the day's automatic page is found or
+  // created. No-mentor journal entries deliberately belong to no meditation
+  // — the /journal room is one continuous log, kept off the mentor's today
+  // screen and out of the meditations list so it can never be reopened with
+  // the mentor.
+  let meditation = null;
+  if (!noMentor) {
+    meditation = await resolveMeditation(supabase, user.id, body?.meditationId);
+    if (!meditation) {
+      if (typeof body?.meditationId === "string" && body.meditationId) {
+        return Response.json({ error: "That page is gone." }, { status: 404 });
+      }
+      return Response.json(
+        { error: "Something failed. Your words were not lost — try again." },
+        { status: 500 },
+      );
     }
-    return Response.json(
-      { error: "Something failed. Your words were not lost — try again." },
-      { status: 500 },
-    );
   }
 
   // Page-level mode wins; the profile's mode is the default.
@@ -199,7 +201,7 @@ export async function POST(request) {
     .insert({
       user_id: user.id,
       content: entry,
-      meditation_id: meditation.id,
+      meditation_id: noMentor ? null : meditation.id,
       ...(noMentor ? { entry_type: "journal" } : {}),
     })
     .select("id")
