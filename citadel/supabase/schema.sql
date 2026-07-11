@@ -22,6 +22,40 @@ create table public.profiles (
   age integer check (age between 5 and 120),
   aim text,
   about_note text,
+  -- Daily reflection reminder (migration 011). reminder_time is wall-clock
+  -- "HH:MM" in reminder_timezone (IANA, or "UTC" fallback).
+  -- reminder_last_sent guards one send per local day. Paid; enforced in the
+  -- API, not here.
+  reminder_enabled boolean not null default false,
+  reminder_time text,
+  reminder_timezone text,
+  reminder_last_sent date,
+  -- Goal reminder (migration 012): one push a day of the user's stated goal
+  -- (profiles.aim). Shares reminder_timezone.
+  goal_reminder_enabled boolean not null default false,
+  goal_reminder_time text,
+  goal_reminder_last_sent date,
+  -- Quote reminder (migration 012): N stoic-toned lines a day (1..6), evenly
+  -- spaced from an 08:00 local base. slots_sent = how many of today's slots
+  -- have fired, so the hourly cron sends at most one per slot.
+  quote_reminder_enabled boolean not null default false,
+  quote_reminder_count integer not null default 1
+    check (quote_reminder_count between 1 and 6),
+  quote_reminder_last_sent date,
+  quote_reminder_slots_sent integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Web-push subscriptions (migration 011): one row per device a user has
+-- enabled reminders on. Written client-side after PushManager.subscribe;
+-- the cron fans a push out to every row for a due user and prunes any the
+-- push service reports gone.
+create table public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
   created_at timestamptz not null default now()
 );
 
@@ -113,6 +147,8 @@ create index open_loops_user_open_idx
   where not resolved;
 create index weekly_insights_user_week_idx
   on public.weekly_insights (user_id, week_start desc);
+create index push_subscriptions_user_idx
+  on public.push_subscriptions (user_id);
 
 -- Entries are private. RLS everywhere; the Stripe webhook uses the
 -- service-role key and is the only thing that writes subscription_status.
@@ -123,6 +159,7 @@ alter table public.responses enable row level security;
 alter table public.user_activity_log enable row level security;
 alter table public.open_loops enable row level security;
 alter table public.weekly_insights enable row level security;
+alter table public.push_subscriptions enable row level security;
 
 -- auth.uid() wrapped in (select ...) so Postgres evaluates it once per
 -- query instead of once per row — Supabase's own recommendation at scale.
@@ -150,6 +187,17 @@ create policy "resolve own loops" on public.open_loops
 -- Weekly insights: read-only to the user; written server-side.
 create policy "read own insights" on public.weekly_insights
   for select using ((select auth.uid()) = user_id);
+
+-- Push subscriptions: users manage their own. The cron reads across users
+-- with the service role (bypasses RLS), never the anon/authenticated key.
+create policy "read own push subs" on public.push_subscriptions
+  for select using ((select auth.uid()) = user_id);
+
+create policy "insert own push subs" on public.push_subscriptions
+  for insert with check ((select auth.uid()) = user_id);
+
+create policy "delete own push subs" on public.push_subscriptions
+  for delete using ((select auth.uid()) = user_id);
 
 create policy "read own meditations" on public.meditations
   for select using ((select auth.uid()) = user_id);

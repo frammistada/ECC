@@ -9,26 +9,28 @@ import { MenuMark } from "@/components/icons";
 // list inside uses text labels because sections need names. Unbuilt
 // sections are shown grayed out (not hidden) with a mono "soon" tag, so
 // the shape of the app is visible before every room exists.
-// No-Mentor Journaling is its own room (/journal), reached only from here
-// and only by subscribers — free users never see it (absent, not grayed,
-// so the core experience carries no per-visit upsell). It is added to the
-// list below when `subscribed` is true. Sections without an href are
-// unbuilt and shown grayed with a "soon" tag.
-const BASE_SECTIONS = [
+// Two paid rooms live here. No-Mentor Journaling (/journal) is hidden
+// entirely from free users — it was never a placeholder, so showing it
+// would be a pure upsell. Reminders (/reminders) has long sat here as a
+// grayed "soon" item, so free users keep seeing it that way (it becomes a
+// live link once they subscribe) rather than having it vanish. Sections
+// without an href render grayed with a "soon" tag.
+const FREE_SECTIONS = [
   { label: "Who am I", href: "/who-am-i" },
   { label: "To Myself", href: "/to-myself" },
   { label: "Reminders" },
 ];
 
+const SUBSCRIBED_SECTIONS = [
+  { label: "Who am I", href: "/who-am-i" },
+  { label: "To Myself", href: "/to-myself" },
+  { label: "No-Mentor Journaling", href: "/journal" },
+  { label: "Reminders", href: "/reminders" },
+];
+
 export default function NavMenu({ subscribed = false }) {
   const [open, setOpen] = useState(false);
-  const sections = subscribed
-    ? [
-        ...BASE_SECTIONS.slice(0, 2),
-        { label: "No-Mentor Journaling", href: "/journal" },
-        ...BASE_SECTIONS.slice(2),
-      ]
-    : BASE_SECTIONS;
+  const sections = subscribed ? SUBSCRIBED_SECTIONS : FREE_SECTIONS;
 
   return (
     <>

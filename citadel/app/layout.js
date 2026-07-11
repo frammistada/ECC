@@ -21,6 +21,14 @@ const plexMono = IBM_Plex_Mono({
 export const metadata = {
   title: "Citadel",
   description: "An evening reflection, and an honest reply.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Citadel", statusBarStyle: "black" },
+};
+
+// Night background, so the browser chrome (and any TWA/standalone shell)
+// matches the app rather than flashing white.
+export const viewport = {
+  themeColor: "#181A16",
 };
 
 export default function RootLayout({ children }) {

@@ -31,12 +31,13 @@ came before. This file loads every session; keep it concise and current.
   User-written only — never summarized, never machine-revised, not gated
   behind the subscription. Saves through the same `/api/settings` updater.
 - **Sections drawer.** Hamburger (top-left of the entry screen,
-  `components/nav-menu.js`) opens a left drawer of app sections. Unbuilt
-  sections (Reminders) stay visible but grayed out with a mono "soon"
-  tag — add them here first, then build. No-Mentor Journaling is a live
-  room (`/journal`) but appears in the drawer **only for subscribers**
-  (`NavMenu` takes a `subscribed` prop) — free users never see it, so the
-  core experience carries no per-visit upsell.
+  `components/nav-menu.js`) opens a left drawer of app sections. `NavMenu`
+  takes a `subscribed` prop and shows two section sets. No-Mentor
+  Journaling (`/journal`) is a subscriber-only room hidden entirely from
+  free users. Reminders (`/reminders`) is subscriber-only too, but shows
+  as a grayed "soon" item for free users (it was a placeholder long before
+  it shipped) and becomes a live link once they subscribe. Any remaining
+  href-less section renders grayed with a "soon" tag.
   Below the sections: "export my data" — a plain anchor to `/api/export`.
   To Myself is live (Milestones moved inside it; /milestones remains as
   the spread's own page, reached from To Myself's milestone rows).
@@ -75,6 +76,54 @@ came before. This file loads every session; keep it concise and current.
   time so chosen silence can't be mistaken for a failed reply. Deliberately
   secondary: no first-use interstitial, no upsell for free tiers, plain
   wording only.
+- **Reminders (subscribers only — web push, `/reminders` room).** Three
+  reminder types, all sharing one push subscription + one hourly cron.
+  UI lives in the Reminders drawer room (`app/reminders/page.js` +
+  `components/reminders-form.js`), not settings — matches the drawer-room
+  pattern. The form posts the full desired state of all three types to
+  `/api/reminders` in one snapshot; enabling any of them asks Notification
+  permission, registers `/public/sw.js`, subscribes via `PushManager`
+  (VAPID public key from `NEXT_PUBLIC_VAPID_PUBLIC_KEY`), stores the
+  subscription in `push_subscriptions` (one row per device), and requires
+  a subscription (403 otherwise). `lib/push.js` sends via `web-push` with
+  a VAPID keypair. The three types:
+  - **Reflection** — one push/day at `reminder_time` ("Something tested
+    you today."). The original; single time, single message.
+  - **Goal** — one push/day at `goal_reminder_time` of the user's stated
+    goal, taken from **`profiles.aim`** (the "what you're trying to
+    accomplish" field in Who am I — an already-explicit user-written goal,
+    so no new field). If `aim` is empty the cron skips it and the room
+    shows a hint linking to Who am I.
+  - **Quote** — N stoic-toned lines/day (`quote_reminder_count`, default
+    1, **max 6**), from the static `QUOTE_BANK` in `lib/reminders.js`
+    (original lines in the mentor's voice — no exclamation, no philosopher
+    citations; a config array, not a table, so the cron needs no DB read
+    for content). Slots are evenly spaced by 24h/count from a **fixed
+    08:00 local base** (independent of the reflection time). `slots_sent`
+    tracks how many of today's slots have fired so the hourly cron sends
+    at most one per slot and never bursts to catch up.
+
+  All the due/slot logic is pure and unit-tested in `lib/reminders.js`
+  (`isReminderDue`, `isGoalReminderDue`, `quoteReminderStatus`,
+  `quoteSlots`). Each type carries its own `*_last_sent` guard and a
+  distinct notification `tag`, so a reflection, goal, and quote reminder
+  can arrive in the same tick without collapsing. A "send a test of each
+  now" button (`/api/reminders/test`) previews every enabled type on the
+  user's own devices. **Scheduling:** `vercel.json` runs
+  `/api/cron/reminders` hourly; it selects users with any type enabled
+  (`.or(...)`), sends whatever is due, prunes dead endpoints (404/410),
+  and stamps the per-type guards. Cron is Bearer-protected by
+  `CRON_SECRET`, fails closed if unset, reads across users with the
+  service role. **Timezone:** all three share `reminder_timezone`
+  (wall-clock "HH:MM", IANA, "UTC" fallback). **Platform:** Android
+  Chrome + desktop Chrome/Firefox/Edge work; **iOS is out of scope** (web
+  push there needs an installed PWA on 16.4+); a future Android TWA wrap
+  surfaces these as native notifications. **Infra/cost:** hourly cron
+  needs Vercel **Pro** (Hobby caps crons at once-daily); the push
+  transport itself is free. High quote counts distribute across a full
+  24h, so counts ≥3 include an overnight slot by design. All notifications
+  open `/` on tap (SW `notificationclick`). PWA surface:
+  `manifest.webmanifest`, `public/icons/*`, push-only service worker.
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
   original slip toggle: a `slipped` check-in offers the same draft
   (deliberate — same signal), and a fully silent yesterday (no entry, no
@@ -163,8 +212,13 @@ came before. This file loads every session; keep it concise and current.
 
 `profiles` (id, email, subscription_status, stripe_*, pattern_summary, mentor_mode,
 preferred_name, onboarding_answers, onboarded, accountability_name/email,
-age/aim/about_note) ·
+age/aim/about_note, reminder_enabled/reminder_time/reminder_timezone/
+reminder_last_sent, goal_reminder_enabled/goal_reminder_time/
+goal_reminder_last_sent, quote_reminder_enabled/quote_reminder_count/
+quote_reminder_last_sent/quote_reminder_slots_sent) ·
 `meditations` (user_id, name, mentor_mode nullable, auto_day, created_at) ·
+`push_subscriptions` (user_id, endpoint unique, p256dh, auth — web-push
+devices for the daily reminder) ·
 `entries` (user_id, meditation_id, content, entry_type
 'reflection'|'checkin'|'journal', checkin_state) · `responses` (entry_id,
 content — none for 'journal' entries; 'journal' rows also have
