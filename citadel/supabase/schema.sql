@@ -35,14 +35,19 @@ create table public.profiles (
   goal_reminder_enabled boolean not null default false,
   goal_reminder_time text,
   goal_reminder_last_sent date,
-  -- Quote reminder (migration 012): N stoic-toned lines a day (1..6), evenly
-  -- spaced from an 08:00 local base. slots_sent = how many of today's slots
-  -- have fired, so the hourly cron sends at most one per slot.
+  -- Quote reminder (migration 012): N stoic-toned lines a day (1..6),
+  -- spaced across the waking window (migration 013). slots_sent = how many
+  -- of today's slots have fired, so the hourly cron sends at most one per
+  -- slot.
   quote_reminder_enabled boolean not null default false,
   quote_reminder_count integer not null default 1
     check (quote_reminder_count between 1 and 6),
   quote_reminder_last_sent date,
   quote_reminder_slots_sent integer not null default 0,
+  -- Waking window (migration 013), wall-clock "HH:MM" in reminder_timezone;
+  -- null = 07:00 / 23:00 defaults. Spaces the quote reminder.
+  wake_time text,
+  sleep_time text,
   created_at timestamptz not null default now()
 );
 

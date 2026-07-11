@@ -82,6 +82,25 @@ export async function POST(request) {
     update.quote_reminder_slots_sent = 0;
   }
 
+  // Waking window (used to space quote reminders). Stored whenever provided,
+  // independent of which reminders are on — it's general day info. A blank
+  // string clears it back to the default.
+  for (const [field, column] of [
+    ["wakeTime", "wake_time"],
+    ["sleepTime", "sleep_time"],
+  ]) {
+    if (body?.[field] !== undefined) {
+      const raw = typeof body[field] === "string" ? body[field].trim() : "";
+      if (raw && parseHhmm(raw) === null) {
+        return Response.json(
+          { error: "That wake/sleep time doesn't look right." },
+          { status: 400 },
+        );
+      }
+      update[column] = raw || null;
+    }
+  }
+
   if (anyOn) {
     // IANA zone from the browser; "UTC" fallback keeps a reminder firing.
     update.reminder_timezone =
