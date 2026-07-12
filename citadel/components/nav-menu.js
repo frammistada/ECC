@@ -82,13 +82,15 @@ export default function NavMenu({ subscribed = false }) {
             {/* Plain anchor, not a Link: the route answers with a file
                 download (Content-Disposition), not a page. Free on every
                 tier — a trust feature, never gated. */}
-            <a
-              href="/api/export"
-              onClick={() => setOpen(false)}
-              className="mt-8 block border-t border-parchment/15 px-4 pt-6 font-mono text-xs text-ash underline decoration-1 underline-offset-4"
-            >
-              export my data
-            </a>
+            <div className="mt-8 border-t border-parchment/15 px-4 pt-6">
+              <a
+                href="/api/export"
+                onClick={() => setOpen(false)}
+                className="inline-block rounded-xl border border-parchment/20 px-4 py-2 font-mono text-xs text-ash transition-colors hover:bg-parchment/10"
+              >
+                export my data
+              </a>
+            </div>
           </nav>
         </div>
       )}

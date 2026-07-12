@@ -586,7 +586,12 @@ export default function Journal({
               )}
 
               {error && <p className="mt-3 text-sm text-ash">{error}</p>}
-              <div className="mt-4 flex items-center justify-between gap-4">
+              <div
+                className={
+                  "mt-4 flex items-center gap-4 " +
+                  (subscribed ? "justify-center" : "justify-between")
+                }
+              >
                 <button
                   type="submit"
                   disabled={waiting || !draft.trim()}
@@ -610,7 +615,7 @@ export default function Journal({
                 setError(null);
               }}
               disabled={waiting}
-              className="mx-auto mt-3 font-mono text-xs text-ash underline decoration-1 underline-offset-4 disabled:opacity-50"
+              className="mx-auto mt-3 block rounded-xl border border-parchment/20 px-5 py-2 font-mono text-xs text-ash transition-colors hover:bg-parchment/10 disabled:opacity-50"
             >
               no entry in you today? just check in
             </button>

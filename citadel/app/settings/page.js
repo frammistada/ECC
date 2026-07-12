@@ -6,6 +6,7 @@ import { ArrowLeftMark, SignOutMark } from "@/components/icons";
 import { isEmailConfigured } from "@/lib/email";
 import SettingsForm from "@/components/settings-form";
 import OpenLoops from "@/components/open-loops";
+import AccountDangerZone from "@/components/account-danger-zone";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,7 @@ export default async function SettingsPage() {
           emailConfigured={isEmailConfigured()}
         />
         <OpenLoops initialLoops={loops ?? []} />
+        <AccountDangerZone />
       </section>
     </main>
   );

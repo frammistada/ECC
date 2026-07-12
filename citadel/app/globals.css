@@ -35,6 +35,19 @@
   color: var(--color-marble);
 }
 
+/* Primary screens use dvh-based heights (h-[calc(100dvh-24px)]) and never
+   scroll their own body. Without this, a touch drag on mobile still
+   triggers the browser's own rubber-band/overscroll gesture at the page
+   edges, which recomputes dvh mid-bounce — the fixed .wavy-frame overlay
+   and the dvh-sized card then separate for an instant, showing a hairline
+   seam of plain background between them. Blocking edge overscroll removes
+   the bounce entirely; it does not affect normal in-bounds scrolling on
+   pages that do scroll (settings, who-am-i, to-myself). */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 /* Thin wavy border framing the whole screen — the consistent shell across
    all screens (citadel_ui_spec.md). A scalloped ring tile stretched via
    border-image; sits above content but never intercepts input. */

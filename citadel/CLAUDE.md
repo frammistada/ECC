@@ -46,6 +46,16 @@ came before. This file loads every session; keep it concise and current.
   plain-text download (`lib/export.js` builds the text). User-written
   content only — no pattern_summary, no open_loops, no instrumentation.
   Free on every tier, no rate limit, by design.
+- **Account deletion.** Settings' "red zone" (`components/
+  account-danger-zone.js`), the one deliberate Ember exception. Two-step:
+  a plain trigger, then a typed "delete" confirmation gates the
+  destructive button — more friction than the meditations delete dialog,
+  since this is the whole account, irreversibly. `DELETE /api/account`
+  best-effort cancels any live Stripe subscription, then calls
+  `admin.auth.admin.deleteUser`; every table's `on delete cascade` chain
+  (`profiles` → `entries`/`meditations`/`open_loops`/`weekly_insights`/
+  `user_activity_log`/`push_subscriptions`, `responses` → `entries`)
+  cascades the rest without a manual per-table delete.
 - **Micro check-ins (free — never gate, never count against the paywall).**
   One tap (held/slipped/neither) + optional line (≤140 chars) via
   `/api/checkin`, stored as `entries.entry_type = 'checkin'` with
@@ -287,8 +297,10 @@ project (id `ktztzjajwhlgqsbrcftk`).
   `#181A16` bg, Panel `#1D201A` lifted cards, Parchment `#E9E5DA` text on dark,
   Ash `#9B9789` secondary/rules, Marble `#F6F4F0` light input surfaces with Ink
   `#1F2320` text, Cream `#EFEADF` primary buttons, Patina `#5C6B4F` accent on
-  light surfaces. **Ember `#8B3A3A` is reserved for the paywall alone** — never
-  elsewhere. No gradients, no pure black/white, no purple/indigo/neon.
+  light surfaces. **Ember `#8B3A3A` is reserved for the paywall and account
+  deletion only** (`components/account-danger-zone.js`, settings) — the two
+  moments serious enough to warrant it; nowhere else. No gradients, no pure
+  black/white, no purple/indigo/neon.
 - **Shell**: thin wavy border framing every screen (`.wavy-frame`, global in
   `app/layout.js`) + the interlocking-rings mark (`components/ring-mark.js`)
   beside/above the Citadel title on every screen. Icons live in
