@@ -33,6 +33,11 @@ export async function middleware(request) {
 }
 
 export const config = {
+  // Run on the Node.js runtime, not Edge. The Supabase client this uses to
+  // refresh the auth token pulls in process.version, which the Edge Runtime
+  // rejects at build ("Edge Function middleware is referencing unsupported
+  // modules"). Node middleware (Next 15.2+) has no such restriction.
+  runtime: "nodejs",
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|api/stripe-webhook|api/cron).*)",
   ],
