@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.citadel_black.twa",
+        "sha256_cert_fingerprints": ["43:9F:7A:77:32:00:77:77:29:B1:64:89:ED:F9:86:4A:16:7A:9C:B9:B2:52:EE:76:3F:27:D0:1A:90:4F:F7:E4"]
+      }
+    }]

@@ -145,6 +145,13 @@ came before. This file loads every session; keep it concise and current.
   itself is free. All notifications open `/` on tap (SW
   `notificationclick`). PWA surface: `manifest.webmanifest`,
   `public/icons/*`, push-only service worker.
+- **Android TWA wrapper.** `public/.well-known/assetlinks.json` verifies
+  the PWABuilder-generated Trusted Web Activity (package
+  `app.vercel.citadel_black.twa`) as the site's own app so Chrome drops
+  the browser address bar once installed. The signing keystore lives
+  outside the repo with the user; only the public fingerprint file is
+  checked in. Re-run PWABuilder and update this file if the app is ever
+  re-signed with a new key.
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
   original slip toggle: a `slipped` check-in offers the same draft
   (deliberate — same signal), and a fully silent yesterday (no entry, no
