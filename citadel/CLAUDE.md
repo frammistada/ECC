@@ -199,6 +199,29 @@ came before. This file loads every session; keep it concise and current.
   Magic links were **removed** — on mobile they open in the mail app's browser and
   strand the original tab. The emailed code is verified in the same tab. The
   "email me a code" path doubles as first-time signup AND password reset.
+- **No `middleware.js` — deliberately.** A proactive-session-refresh
+  middleware existed from the project's first commit through mid-2026,
+  then was removed. It was never the auth gate — every protected page
+  already calls `supabase.auth.getUser()` and `redirect("/")` itself
+  (`lib/supabase/server.js` client), so removing it changes nothing about
+  security. It was removed because Vercel packages `middleware.js` as its
+  own isolated Edge Function, separate from the rest of the app, and on
+  this project's layout (Root Directory = `citadel`, a subfolder of the
+  ECC monorepo) that isolated packaging step failed in succession on
+  three unrelated, deploy-time-only errors (a `@/` path-alias resolution
+  failure, then `ReferenceError: __dirname is not defined`) pulling in
+  `@supabase/ssr`'s dependency chain — none reproducible in a local
+  `next build`, each only visible after a live deploy. Rather than keep
+  chasing Edge Function bundling quirks one deploy at a time, the
+  middleware was deleted outright. Cost: sessions aren't proactively
+  refreshed before a page loads; the browser client's own refresh timer
+  and each page's independent `getUser()` call cover it in practice — a
+  very stale, long-idle session may occasionally need one extra sign-in
+  instead of a silent refresh. If a real session-refresh middleware is
+  wanted again later, verify the JWT with a lightweight, genuinely
+  Edge-native library (e.g. `jose`) instead of the full `@supabase/ssr` +
+  `@supabase/supabase-js` client, which pulls in the Realtime/websocket
+  sub-dependency chain that caused these failures.
 - **Scarcity.** 5 free reflections (`lib/limits.js`), enforced server-side in
   `app/api/reflect/route.js` (402 + paywall), then Stripe.
 - **Meditations (entry pages).** Every entry belongs to a `meditations` row —
