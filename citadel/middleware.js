@@ -33,11 +33,19 @@ export async function middleware(request) {
 }
 
 export const config = {
-  // Run on the Node.js runtime, not Edge. The Supabase client this uses to
-  // refresh the auth token pulls in process.version, which the Edge Runtime
-  // rejects at build ("Edge Function middleware is referencing unsupported
-  // modules"). Node middleware (Next 15.2+) has no such restriction.
-  runtime: "nodejs",
+  // Edge Runtime (Next's default for middleware) — matches every prior
+  // working deployment. @supabase/supabase-js's constants.ts reads
+  // process.version behind a `typeof process !== 'undefined'` guard, just
+  // to build a debug header string; it safely evaluates to undefined on
+  // Edge (process.version doesn't exist there) and is never on a path this
+  // middleware exercises. Vercel's Edge build validator still flags the
+  // bare token via static analysis, so it's explicitly allow-listed below
+  // — the documented escape hatch for exactly this false positive class.
+  // (Node.js middleware was tried instead: it hits a separate, harder
+  // problem — Next's own "next/server" import has no package.json
+  // "exports" entry, so Node's strict ESM resolver can't find it outside
+  // Next's own bundler. Edge + allow-list is the more mature path.)
+  unstable_allowDynamic: ["/node_modules/@supabase/supabase-js/**"],
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|api/stripe-webhook|api/cron).*)",
   ],
