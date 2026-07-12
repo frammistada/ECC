@@ -115,17 +115,24 @@ came before. This file loads every session; keep it concise and current.
   can arrive in the same tick without collapsing. A "send a test of each
   now" button (`/api/reminders/test`) previews every enabled type on the
   user's own devices. **Scheduling:** `vercel.json` runs
-  `/api/cron/reminders` hourly; it selects users with any type enabled
+  `/api/cron/reminders`; it selects users with any type enabled
   (`.or(...)`), sends whatever is due, prunes dead endpoints (404/410),
   and stamps the per-type guards. Cron is Bearer-protected by
   `CRON_SECRET`, fails closed if unset, reads across users with the
-  service role. **Timezone:** all three share `reminder_timezone`
+  service role. **The logic is designed for an hourly cron** (`0 * * * *`)
+  so per-user times and the multiple quote slots fire close to on time —
+  but the schedule is currently **once daily** (`0 18 * * *`) because the
+  Vercel project is on the **Hobby** plan, which rejects sub-daily crons
+  at deploy. On Hobby, reminders effectively fire in that one daily run
+  for whoever is due; **flip `vercel.json` back to `0 * * * *` once on
+  Pro** to restore the intended behavior. **Timezone:** all three share `reminder_timezone`
   (wall-clock "HH:MM", IANA, "UTC" fallback). **Platform:** Android
   Chrome + desktop Chrome/Firefox/Edge work; **iOS is out of scope** (web
   push there needs an installed PWA on 16.4+); a future Android TWA wrap
-  surfaces these as native notifications. **Infra/cost:** hourly cron
-  needs Vercel **Pro** (Hobby caps crons at once-daily); the push
-  transport itself is free. All notifications open `/` on tap (SW
+  surfaces these as native notifications. **Infra/cost:** the intended
+  hourly cron needs Vercel **Pro** (Hobby caps crons at once-daily, so the
+  schedule is daily for now — see Scheduling above); the push transport
+  itself is free. All notifications open `/` on tap (SW
   `notificationclick`). PWA surface: `manifest.webmanifest`,
   `public/icons/*`, push-only service worker.
 - **Consequence mechanic (premium-flagged).** Two triggers beyond the
